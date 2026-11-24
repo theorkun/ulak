@@ -296,7 +296,7 @@ function createChat(options = {}) {
       fail(404, 'İşlem bulunamadı.');
     }
     if (!['GET', 'HEAD'].includes(req.method)) fail(405, 'Yöntem desteklenmiyor.');
-    const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'] };
+    const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
     res.writeHead(200, { 'Content-Type': `${file[1]}; charset=utf-8`, 'Cache-Control': 'no-cache' });
     if (req.method === 'HEAD') res.end(); else res.end(fs.readFileSync(path.join(__dirname, 'public', file[0])));

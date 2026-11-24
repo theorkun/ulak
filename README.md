@@ -4,6 +4,8 @@ ULAK, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından o
 
 Kaynak depo: https://github.com/theorkun/ulak
 
+Arayüzün ana rengi turkuazdır. Giriş ekranındaki Sarıçam Belediyesi logosu [belediyenin resmî sitesinden](https://www.saricam.bel.tr/files/ui/logo2.png) alınmış ve `public/saricam-belediyesi-logo.png` dosyasıyla paketlenmiştir; yerel ağda görünmesi için internet bağlantısı gerekmez. Logo özgün renkleri ve oranlarıyla gösterilir.
+
 ## GitHub üzerinden tarayıcı demosu
 
 **[Demoyu aç](https://theorkun.github.io/ulak/)** · Örnek kullanıcı: `demo.yonetici` · Örnek parola: `UlakDemo2026!`
