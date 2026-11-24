@@ -11,6 +11,7 @@ const state = { user:null,csrf:'',rooms:[],directory:[],active:null,messages:[],
 let toastTimer,refreshTimer,returnFocus,pendingMessage=false,pendingDirectory=false,pendingSend=null;
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),4000);}
 async function api(route,data,method){
+  if(window.ULAK_DEMO){try{return await window.ULAK_DEMO.request(route,data,method);}catch(e){if(e.status===401&&state.user)signOut();if(e.status===428&&state.user)passwordDialog();throw e;}}
   const response=await fetch(route,{method:method||(data?'POST':'GET'),headers:data||method?{'Content-Type':'application/json','X-CSRF-Token':state.csrf}:{},credentials:'same-origin',body:data?JSON.stringify(data):undefined});
   const result=await response.json();
   if(!response.ok){if(response.status===401&&state.user)signOut();if(response.status===428&&state.user)passwordDialog();const e=new Error(result.error||'İşlem tamamlanamadı.');e.status=response.status;throw e;}return result;
@@ -27,7 +28,8 @@ async function boot(){
   try{
     const status=await api('/api/status');state.setup=status.setupRequired;state.preview=status.preview===true;
     if(state.preview){
-      document.body.classList.add('preview-mode');const note=document.createElement('div');note.className='preview-note';note.textContent='Önizleme · Örnek veriler';document.body.prepend(note);
+      document.body.classList.add('preview-mode');const note=document.createElement('div');note.className='preview-note';note.textContent=status.browserDemo?'Demo · Bu tarayıcıya özel · Yenilenince sıfırlanır':'Önizleme · Örnek veriler';document.body.prepend(note);
+      if(status.browserDemo){$('#auth-help').textContent='Yalnızca örnek veriler kullanın. Bu demo gerçek kurum sunucusuna bağlı değildir.';$('#preview-accounts p:last-child').textContent='Demo verileri sayfa yenilenince silinir; diğer ziyaretçilerle paylaşılmaz.';}
       $('#preview-accounts').hidden=false;
       $('#demo-account').innerHTML=status.previewAccounts.map(u=>`<option value="${esc(u.username)}">${esc(u.name)} · ${esc(u.department)}</option>`).join('');
       $('#demo-password').textContent=status.previewPassword;
@@ -52,7 +54,7 @@ function signOut(){
   $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';if(state.preview)$('#demo-account').dispatchEvent(new Event('change'));
 }
 $('#logout').addEventListener('click',async()=>{state.source?.close();try{await api('/api/logout',{});signOut();}catch(e){toast(e.message);if(state.user)connect();}});
-function connect(){state.source?.close();const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>scheduleRefresh(JSON.parse(e.data)));source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
+function connect(){state.source?.close();if(window.ULAK_DEMO){$('#connection-text').textContent='Tarayıcı demosu';return;}const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>scheduleRefresh(JSON.parse(e.data)));source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
 function scheduleRefresh(value={}){
   if(value.conversationId===state.active)pendingMessage=true;if(['directory','presence'].includes(value.kind))pendingDirectory=true;clearTimeout(refreshTimer);
   refreshTimer=setTimeout(async()=>{if(!state.user||state.user.mustChangePassword)return;try{const directory=pendingDirectory;pendingDirectory=false;await refresh(directory);if(pendingMessage&&state.active){pendingMessage=false;if(state.history)$('#jump-latest').hidden=false;else await loadMessages(false);}}catch(e){if(state.user)toast(e.message);}},180);

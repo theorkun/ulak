@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#33465e">
+  <title>ULAK · Tarayıcı Demosu</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css?v=5">
+  <script src="browser-demo.js?v=1" defer></script>
+  <script src="app.js?v=6" defer></script>
+</head>
+<body>
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <a class="brand" href="./">ULAK</a>
+      <h1 id="auth-title">Giriş yap</h1>
+      <p id="auth-description" class="muted">Kurum hesabınızla devam edin.</p>
+      <form id="auth-form">
+        <div id="setup-fields" hidden>
+          <label>Kurulum kodu<input id="setup-token" type="password" autocomplete="off" maxlength="100"></label>
+          <label>Ad soyad<input id="setup-name" maxlength="80" autocomplete="name"></label>
+          <label>Müdürlük<input id="setup-department" maxlength="80" value="Yönetim"></label>
+        </div>
+        <label>Kullanıcı adı<input id="login-username" required maxlength="40" autocomplete="username" placeholder="ad.soyad"></label>
+        <label>Parola<input id="login-password" type="password" required maxlength="128" autocomplete="current-password" placeholder="Parolanız"></label>
+        <p id="auth-error" class="form-error" role="alert"></p>
+        <button class="button primary full" id="auth-submit" type="submit">Giriş yap</button>
+      </form>
+      <details id="preview-accounts" class="demo-options" hidden>
+        <summary>Örnek hesaplarla dene</summary>
+        <label for="demo-account">Hesap<select id="demo-account"></select></label>
+        <p class="small muted">Örnek parola: <code id="demo-password"></code></p>
+        <p class="small muted">Önizleme verileri program kapanınca silinir.</p>
+      </details>
+      <p id="auth-help" class="auth-help muted small">Hesabınız yoksa kurum yöneticinize başvurun.</p>
+    </div>
+  </section>
+
+  <div id="workspace" class="workspace" hidden>
+    <header class="masthead">
+      <a class="brand" href="./">ULAK</a>
+      <button id="global-search" class="search-button"><span data-icon="search"></span><span>Mesaj ara</span></button>
+      <div class="masthead-user">
+        <button id="profile-open" class="user-profile" aria-label="Hesap ve parola"><span id="profile-avatar" class="avatar"></span><span><strong id="profile-name"></strong><small id="profile-department"></small></span></button>
+        <button class="icon-button" id="logout" aria-label="Çıkış yap" title="Çıkış yap" data-icon="logout"></button>
+      </div>
+    </header>
+    <aside class="sidebar">
+      <div class="sidebar-heading"><h2>Alanlar</h2><span id="room-count"></span></div>
+      <label class="room-filter"><span data-icon="search"></span><input id="chat-filter" placeholder="Müdürlük bul…" aria-label="Alanları filtrele"></label>
+      <nav id="conversation-list" class="room-list" aria-label="Genel Alan ve müdürlükler"></nav>
+      <div class="sidebar-tools"><button id="admin-open" class="sidebar-action" hidden><span data-icon="settings"></span>Yönetim</button><div class="sidebar-footer"><span id="connection-dot" class="connection-dot"></span><span id="connection-text" role="status">Bağlanıyor…</span><button id="refresh" class="icon-button" aria-label="Yenile" title="Yenile" data-icon="refresh"></button></div></div>
+    </aside>
+    <main class="main-area">
+      <section id="chat-section" class="room-section" hidden>
+        <header class="room-header"><div><h1 id="chat-title">Genel Alan</h1><p id="chat-topic" class="muted small"></p></div><button id="chat-details" class="participants-button"><span data-icon="users"></span><span id="chat-subtitle">Katılımcılar</span></button></header>
+        <section class="composer-card" aria-labelledby="composer-title">
+          <h2 id="composer-title">Mesaj yaz</h2>
+          <div id="reply-preview" class="reply-preview" hidden><div><strong id="reply-label"></strong><span id="reply-text"></span></div><button class="icon-button" id="cancel-reply" aria-label="Yanıtı veya düzenlemeyi iptal et" data-icon="close"></button></div>
+          <form id="message-form"><label class="sr-only" for="message-input">Mesajınız</label><textarea id="message-input" rows="2" maxlength="4000" placeholder="Mesajınızı yazın…"></textarea><div class="composer-footer"><span id="message-length">0 / 4000</span><span class="keyboard-hint">Ctrl + Enter</span><button class="button primary" id="send-message" type="submit">Gönder</button></div></form>
+        </section>
+        <div class="feed-heading"><h2>Mesajlar</h2><span>En yeni önce</span></div>
+        <button id="jump-latest" class="latest-button" hidden>Yeni mesajları göster</button>
+        <div id="message-feed" class="message-feed" role="log" aria-label="Grup mesajları" aria-live="polite"></div>
+      </section>
+      <section id="welcome" class="empty-workspace"><h2>Bir alan seçin</h2><p class="muted">Genel Alan veya kendi müdürlüğünüzle devam edin.</p></section>
+    </main>
+  </div>
+
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <div class="dialog-head"><h2 id="search-title">Mesaj ara</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
+    <form id="search-form" class="inline-form"><label class="sr-only" for="message-search">Aranacak metin</label><input id="message-search" required minlength="2" maxlength="100" placeholder="En az 2 karakter…"><button class="button primary" type="submit">Ara</button></form>
+    <p class="muted small">Genel Alan ve kendi müdürlüğünüzde arama yapılır.</p><div id="search-results" class="search-results" aria-live="polite"></div>
+  </dialog>
+  <dialog id="profile-dialog" aria-labelledby="profile-title">
+    <div class="dialog-head"><h2 id="profile-title">Parola değiştir</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
+    <p id="password-note" class="muted small"></p>
+    <form id="password-form"><label>Mevcut parola<input id="current-password" type="password" required maxlength="128" autocomplete="current-password"></label><label>Yeni parola<input id="new-password" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label><label>Yeni parola tekrar<input id="repeat-password" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label><p class="small muted">En az 10 karakter kullanın.</p><p id="password-error" class="form-error" role="alert"></p><button class="button primary full" type="submit">Kaydet</button></form>
+  </dialog>
+  <dialog id="admin-dialog" class="wide-dialog" aria-labelledby="admin-title">
+    <div class="dialog-head"><h2 id="admin-title">Yönetim</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
+    <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>
+    <details class="admin-section" id="departments-section"><summary>Müdürlükleri yönet</summary><form id="department-form" class="inline-form"><label class="sr-only" for="department-name">Müdürlük adı</label><input id="department-name" name="name" required minlength="2" maxlength="80" placeholder="Yeni müdürlük adı"><button class="button primary" type="submit">Ekle</button></form><div id="department-list" class="department-list"></div></details>
+    <p id="admin-error" class="form-error" role="alert"></p>
+    <label class="admin-search-label" for="admin-user-filter">Personel ara<input id="admin-user-filter" type="search" placeholder="Ad, kullanıcı adı veya müdürlük…"></label>
+    <div id="admin-users"></div>
+    <details class="audit-section"><summary>İşlem geçmişi</summary><div id="audit-list"></div></details>
+  </dialog>
+  <dialog id="detail-dialog" aria-labelledby="detail-title"><div class="dialog-head"><h2 id="detail-title">Katılımcılar</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div><div id="detail-content"></div></dialog>
+  <dialog id="credential-dialog" aria-labelledby="credential-title"><div class="dialog-head"><h2 id="credential-title">Geçici parola</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div><p class="muted">Bu parolayı ilgili personele güvenli bir şekilde iletin. Ekran kapanınca tekrar gösterilmez.</p><p id="credential-user"></p><code id="credential-value" class="credential-value"></code><button class="button primary" data-close>Tamam</button></dialog>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>

@@ -4,6 +4,14 @@ ULAK, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından o
 
 Kaynak depo: https://github.com/theorkun/ulak
 
+## GitHub üzerinden tarayıcı demosu
+
+**[Demoyu aç](https://theorkun.github.io/ulak/)** · Örnek kullanıcı: `demo.yonetici` · Örnek parola: `UlakDemo2026!`
+
+Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Genel Alan, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
+
+`node scripts/build-pages.cjs` komutu yalnızca arayüzü ve örnek verileri `docs/` klasörüne hazırlar. Tasarım değiştiğinde komutu tekrar çalıştırıp `docs/` dosyalarını da gönderin. GitHub Pages kaynağı **main /docs** olarak ayarlanır. Sunucu, veritabanı ve ortam dosyaları bu klasöre kopyalanmaz. Demo kodu kurum sunucusunun giriş sayfasına eklenmez.
+
 ## Sarıçam Belediyesi müdürlük dizini
 
 Sol menüde belediyenin [resmî müdürlükler sayfasından](https://www.saricam.bel.tr/mudurlukler) 24 Kasım 2026 tarihinde kontrol edilen **29 müdürlük** yer alır. Kayıtlar `department-catalog.cjs` içinde kaynak adresi ve kontrol tarihiyle saklanır; uygulamanın çalışması için belediye sitesine veya internete bağlantı gerekmez. Sayfada kısaltılmış “Destek Hiz.” adı açık yazımıyla kullanılmıştır.
