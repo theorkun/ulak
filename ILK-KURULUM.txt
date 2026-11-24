@@ -1,0 +1,17 @@
+KURUMNET - İLK KURULUM
+
+1. ZIP dosyasını bir klasöre çıkarın.
+2. Node.js 24 veya üzeri kurulu olmalı. Bu bilgisayarda mevcut çalışma ortamı otomatik bulunur.
+3. BASLAT-YEREL.cmd dosyasına çift tıklayın.
+4. Açılan konsoldaki "İlk kurulum bağlantısı"nı aynı bilgisayarda tarayıcıya yapıştırın.
+5. Kendi yönetici kullanıcı adınızı ve parolanızı belirleyin.
+6. Uygulamada kalkan simgesinden çalışanları ekleyin.
+7. Konsolda Ctrl+C ile durdurun. Ağ kullanımı için BASLAT-AG.cmd dosyasını açın.
+8. Konsolda gösterilen yerel ağ adresini diğer kurum bilgisayarlarında açın.
+
+Sunucu bilgisayarı açık kalmalı. İlk kurulum yalnızca sunucu bilgisayarından yapılır.
+Windows güvenlik duvarı otomatik değiştirilmez. Ağ erişimini BT birimi düzenlemelidir.
+Gerçek/hassas kurumsal yazışmalardan önce BT birimi HTTPS yapılandırmalıdır.
+
+Bu sürüm dosya gönderimi veya sesli/görüntülü görüşme içermez.
+Ayrıntılı kurulum, yedekleme ve güvenlik sınırları README.md dosyasındadır.
