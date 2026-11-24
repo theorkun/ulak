@@ -6,10 +6,11 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { DatabaseSync } = require('node:sqlite');
+const { createRooms } = require('./rooms.cjs');
 const scrypt = promisify(crypto.scrypt);
 const fold = value => String(value).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
-const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, role: u.role, active: !!u.active, mustChangePassword: !!u.must_change });
+const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, departmentId: u.department_id, role: u.role, active: !!u.active, mustChangePassword: !!u.must_change });
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const text = (value, min, max, label) => {
   if (typeof value !== 'string' || value.trim().length < min || value.trim().length > max) fail(400, `${label}: ${min}–${max} karakter kullanın.`);
@@ -30,6 +31,7 @@ async function passwordMatches(password, stored) {
 
 function createChat(options = {}) {
   const dbPath = options.dbPath || path.join(__dirname, 'data', 'kurumnet.db');
+  if (options.preview && dbPath !== ':memory:') throw Error('Önizleme yalnızca geçici veritabanıyla kullanılabilir.');
   if (dbPath !== ':memory:') fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
@@ -43,6 +45,7 @@ function createChat(options = {}) {
     CREATE INDEX IF NOT EXISTS messages_chat ON messages(conversation_id,id);
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor_id INTEGER REFERENCES users(id), action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`);
   db.function('fold', { deterministic: true }, fold);
+  const rooms = createRooms(db);
   const setupToken = options.setupToken || crypto.randomBytes(24).toString('hex');
   const sessionMs = options.sessionMs || 12 * 60 * 60 * 1000;
   const secure = !!options.tls || process.env.SECURE_COOKIE === '1';
@@ -62,12 +65,12 @@ function createChat(options = {}) {
     current.count++;
   }
   const member = (userId, conversationId) => {
-    const row = db.prepare('SELECT c.* FROM conversations c JOIN members m ON m.conversation_id=c.id WHERE c.id=? AND m.user_id=?').get(conversationId, userId);
+    const row = db.prepare("SELECT c.* FROM conversations c JOIN members m ON m.conversation_id=c.id JOIN users u ON u.id=m.user_id WHERE c.id=? AND m.user_id=? AND u.active=1 AND c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=u.department_id))").get(conversationId, userId);
     if (!row) fail(404, 'Sohbet bulunamadı veya bu sohbete erişiminiz yok.');
     return row;
   };
   function event(payload, conversationId = null) {
-    const ids = conversationId ? new Set(db.prepare('SELECT user_id FROM members WHERE conversation_id=?').all(conversationId).map(x => x.user_id)) : null;
+    const ids = conversationId ? new Set(db.prepare("SELECT m.user_id FROM members m JOIN users u ON u.id=m.user_id JOIN conversations c ON c.id=m.conversation_id WHERE m.conversation_id=? AND u.active=1 AND (c.scope='general' OR (c.scope='department' AND c.department_id=u.department_id))").all(conversationId).map(x => x.user_id)) : null;
     for (const client of clients) if (!ids || ids.has(client.userId)) {
       if (client.res.writableEnded || client.res.destroyed) continue;
       if (client.res.writableLength > 128 * 1024) { client.res.destroy(); continue; }
@@ -76,9 +79,9 @@ function createChat(options = {}) {
   }
   const online = userId => [...clients].some(c => c.userId === userId);
   function messageRow(row) {
-    return { id: row.id, conversationId: row.conversation_id, sender: { id: row.sender_id, name: row.name }, body: row.deleted_at ? '' : row.body, createdAt: row.created_at, editedAt: row.edited_at, deleted: !!row.deleted_at, reply: row.reply_to ? { id: row.reply_to, body: row.reply_deleted ? 'Silinen mesaj' : row.reply_body, name: row.reply_name } : null };
+    return { id: row.id, conversationId: row.conversation_id, sender: { id: row.sender_id, name: row.name, department:row.sender_department }, body: row.deleted_at ? '' : row.body, createdAt: row.created_at, editedAt: row.edited_at, deleted: !!row.deleted_at, reply: row.reply_to ? { id: row.reply_to, body: row.reply_deleted ? 'Silinen mesaj' : row.reply_body, name: row.reply_name } : null };
   }
-  const messageSelect = `SELECT m.*,u.name,r.body reply_body,r.deleted_at reply_deleted,ru.name reply_name FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN messages r ON r.id=m.reply_to LEFT JOIN users ru ON ru.id=r.sender_id`;
+  const messageSelect = `SELECT m.*,u.name,u.department sender_department,r.body reply_body,r.deleted_at reply_deleted,ru.name reply_name FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN messages r ON r.id=m.reply_to LEFT JOIN users ru ON ru.id=r.sender_id`;
   function session(req) {
     const token = String(req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('kn_session='))?.slice(11);
     if (!token || token.length > 200) fail(401, 'Oturum açmanız gerekiyor.');
@@ -114,7 +117,7 @@ function createChat(options = {}) {
       const expected = options.publicOrigin || process.env.PUBLIC_ORIGIN || `${options.tls ? 'https' : 'http'}://${req.headers.host}`;
       if (req.headers.origin !== expected) fail(403, 'İstek kaynağı doğrulanamadı.');
     }
-    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'KurumNet', localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
+    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'ULAK', preview: options.preview === true, ...(options.preview ? { previewAccounts: db.prepare("SELECT username,name,department FROM users WHERE active=1 AND username LIKE 'demo.%' ORDER BY id").all(), previewPassword: 'UlakDemo2026!' } : {}), localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
     if (route === '/api/setup' && req.method === 'POST') {
       limited(`setup:${req.socket.remoteAddress}`, 10, 60000);
       if (countUsers()) fail(409, 'Kurulum zaten tamamlandı.');
@@ -126,9 +129,8 @@ function createChat(options = {}) {
       const password = await passwordHash(input.password);
       if (countUsers()) fail(409, 'Kurulum zaten tamamlandı.');
       const userId = transaction(() => {
-        const id = Number(db.prepare("INSERT INTO users(username,name,password,role) VALUES(?,?,?,'admin')").run(username, name, password).lastInsertRowid);
-        const general = Number(db.prepare("INSERT INTO conversations(kind,title,topic,creator_id) VALUES('group','Genel sohbet','Kurum içi haberler ve ortak paylaşımlar',?)").run(id).lastInsertRowid);
-        db.prepare('INSERT INTO members(conversation_id,user_id) VALUES(?,?)').run(general, id);
+        const id = Number(db.prepare("INSERT INTO users(username,name,password,role,department) VALUES(?,?,?,'admin',?)").run(username, name, password,text(input.department || 'Yönetim',2,80,'Müdürlük')).lastInsertRowid);
+        rooms.sync(id);
         audit(id, 'setup', id); return id;
       });
       return json(res, 201, { user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(userId)), csrf: issueSession(res, userId) });
@@ -166,21 +168,25 @@ function createChat(options = {}) {
       }
       if (user.must_change) fail(428, 'Devam etmeden önce geçici parolanızı değiştirin.');
       if (route === '/api/users' && req.method === 'GET') {
-        const users = db.prepare('SELECT id,username,name,department,role,active FROM users WHERE active=1 ORDER BY name').all();
+        const users = db.prepare('SELECT id,username,name,department,role,active FROM users WHERE active=1 AND (department_id=? OR id=?) ORDER BY name').all(user.department_id,user.id);
         return json(res, 200, { users: users.map(u => ({ ...u, online: online(u.id) })) });
       }
-      if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT id,username,name,department,role,active,must_change FROM users ORDER BY active DESC,name').all().map(publicUser) }); }
+      if (route === '/api/admin/departments' && req.method === 'GET') { admin(user); return json(res,200,{ departments: db.prepare('SELECT d.id,d.name,(SELECT count(*) FROM users u WHERE u.department_id=d.id AND u.active=1) people FROM departments d ORDER BY d.name').all() }); }
+      if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); return json(res,201,{department:dept}); }
+      if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT id,username,name,department,department_id,role,active,must_change FROM users ORDER BY active DESC,name').all().map(publicUser) }); }
       if (route === '/api/admin/users' && req.method === 'POST') {
         admin(user); const input = await body(req);
-        const username = text(input.username, 3, 40, 'Kullanıcı adı').toLowerCase(), name = text(input.name, 2, 80, 'Ad soyad'), department = text(input.department || 'Genel', 1, 80, 'Birim');
+        const username = text(input.username, 3, 40, 'Kullanıcı adı').toLowerCase(), name = text(input.name, 2, 80, 'Ad soyad');
+        const existingDepartment = input.departmentId != null ? db.prepare('SELECT * FROM departments WHERE id=?').get(Number(input.departmentId)) : null;
+        if (input.departmentId != null && !existingDepartment) fail(400,'Müdürlük seçin.');
+        const department = existingDepartment?.name || text(input.department,2,80,'Müdürlük');
         if (!/^[a-z0-9._-]+$/.test(username)) fail(400, 'Kullanıcı adı İngilizce harf, rakam, nokta ve tire içermeli.');
         if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail(409, 'Bu kullanıcı adı zaten var.');
         const temporaryPassword = crypto.randomBytes(12).toString('base64url');
         const password = await passwordHash(temporaryPassword); session(req);
         const id = transaction(() => {
           const id = Number(db.prepare('INSERT INTO users(username,name,department,password,role,must_change) VALUES(?,?,?,?,?,1)').run(username, name, department, password, input.role === 'admin' ? 'admin' : 'member').lastInsertRowid);
-          const general = db.prepare("SELECT id FROM conversations WHERE kind='group' ORDER BY id LIMIT 1").get();
-          if (general) db.prepare('INSERT INTO members(conversation_id,user_id) VALUES(?,?)').run(general.id, id);
+          rooms.sync(id);
           audit(user.id, 'user_created', id); return id;
         }); event({ kind: 'directory' });
         return json(res, 201, { user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(id)), temporaryPassword });
@@ -190,9 +196,15 @@ function createChat(options = {}) {
         admin(user); const id = Number(match[1]), input = await body(req);
         const target = db.prepare('SELECT * FROM users WHERE id=?').get(id); if (!target) fail(404, 'Kullanıcı bulunamadı.');
         if (id === user.id && input.active === false) fail(400, 'Kendi hesabınızı kapatamazsınız.');
-        if (typeof input.active !== 'boolean') fail(400, 'Aktiflik bilgisi gerekli.');
-        transaction(() => { db.prepare('UPDATE users SET active=? WHERE id=?').run(input.active ? 1 : 0, id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id, input.active ? 'user_enabled' : 'user_disabled', id); });
-        for (const c of clients) if (c.userId === id) c.res.end(); event({ kind: 'directory' }); return json(res, 200, { ok: true });
+        if (typeof input.active !== 'boolean' && input.departmentId == null) fail(400,'Aktiflik veya müdürlük bilgisi gerekli.');
+        const dept = input.departmentId != null ? db.prepare('SELECT * FROM departments WHERE id=?').get(Number(input.departmentId)) : null;
+        if (input.departmentId != null && !dept) fail(400,'Müdürlük bulunamadı.');
+        transaction(() => {
+          if (typeof input.active === 'boolean') { db.prepare('UPDATE users SET active=? WHERE id=?').run(input.active ? 1 : 0,id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id,input.active?'user_enabled':'user_disabled',id); }
+          if (dept) { db.prepare('UPDATE users SET department_id=?,department=? WHERE id=?').run(dept.id,dept.name,id); audit(user.id,'department_changed',id); }
+          rooms.sync(id);
+        });
+        if (typeof input.active === 'boolean') for (const c of clients) if (c.userId === id) c.res.end(); event({ kind: 'directory' }); return json(res, 200, { ok: true });
       }
       match = route.match(/^\/api\/admin\/users\/(\d+)\/reset$/);
       if (match && req.method === 'POST') {
@@ -207,7 +219,7 @@ function createChat(options = {}) {
       if (route === '/api/conversations' && req.method === 'GET') {
         const rows = db.prepare(`SELECT c.*,l.id latest_id,l.sender_id last_sender,l.body last_body,l.deleted_at last_deleted,l.created_at last_created,l.edited_at last_edited,lu.name last_name,
           (SELECT count(*) FROM messages WHERE conversation_id=c.id AND id>mem.last_read AND sender_id!=? AND deleted_at IS NULL) unread
-          FROM conversations c JOIN members mem ON mem.conversation_id=c.id LEFT JOIN messages l ON l.id=(SELECT max(id) FROM messages WHERE conversation_id=c.id) LEFT JOIN users lu ON lu.id=l.sender_id WHERE mem.user_id=? ORDER BY coalesce(latest_id,0) DESC,c.id`).all(user.id, user.id);
+          FROM conversations c JOIN members mem ON mem.conversation_id=c.id LEFT JOIN messages l ON l.id=(SELECT max(id) FROM messages WHERE conversation_id=c.id) LEFT JOIN users lu ON lu.id=l.sender_id WHERE mem.user_id=? AND c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) ORDER BY c.scope DESC,c.id`).all(user.id,user.id,user.department_id);
         const allPeople = db.prepare('SELECT m.conversation_id,u.id,u.name,u.department,u.active FROM members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id IN (SELECT conversation_id FROM members WHERE user_id=?)').all(user.id);
         const peopleByChat = new Map();
         for (const person of allPeople) { const id = person.conversation_id; delete person.conversation_id; if (!peopleByChat.has(id)) peopleByChat.set(id, []); peopleByChat.get(id).push(person); }
@@ -216,24 +228,11 @@ function createChat(options = {}) {
           const people = peopleByChat.get(c.id) || [];
           const other = people.find(p => p.id !== user.id);
           const latest = c.latest_id ? { id: c.latest_id, sender: { id: c.last_sender, name: c.last_name }, body: c.last_deleted ? '' : c.last_body, deleted: !!c.last_deleted, createdAt: c.last_created, editedAt: c.last_edited } : null;
-          return { id: c.id, kind: c.kind, title: c.kind === 'direct' ? other?.name || 'Kullanıcı' : c.title, topic: c.topic, creatorId: c.creator_id, people, unread: c.unread, online: c.kind === 'direct' && other ? connected.has(other.id) : false, lastMessage: latest };
+          return { id: c.id, kind:'group',scope:c.scope,departmentId:c.department_id,title:c.title,topic:c.topic,creatorId:c.creator_id,people:people.map(p=>({...p,online:connected.has(p.id)})),unread:c.unread,lastMessage:latest };
         }); return json(res, 200, { conversations });
       }
       if (route === '/api/conversations' && req.method === 'POST') {
-        limited(`create-chat:${user.id}`, 30, 60000); const input = await body(req);
-        if (!Array.isArray(input.members) || input.members.length < 1 || input.members.length > 199) fail(400, '1–199 kişi seçin.');
-        const ids = [...new Set([user.id, ...input.members])];
-        if (ids.some(id => !Number.isInteger(id) || !db.prepare('SELECT id FROM users WHERE id=? AND active=1').get(id))) fail(400, 'Geçersiz katılımcı.');
-        const kind = input.kind === 'direct' ? 'direct' : 'group';
-        if (kind === 'direct' && ids.length !== 2) fail(400, 'Birebir sohbet için bir kişi seçin.');
-        const title = kind === 'group' ? text(input.title, 2, 80, 'Grup adı') : '';
-        const key = kind === 'direct' ? [...ids].sort((a,b) => a-b).join(':') : null;
-        if (key) { const old = db.prepare('SELECT id FROM conversations WHERE direct_key=?').get(key); if (old) return json(res, 200, { id: old.id }); }
-        const id = transaction(() => {
-          const id = Number(db.prepare('INSERT INTO conversations(kind,title,topic,creator_id,direct_key) VALUES(?,?,?,?,?)').run(kind, title, String(input.topic || '').trim().slice(0, 200), user.id, key).lastInsertRowid);
-          ids.forEach(person => db.prepare('INSERT INTO members(conversation_id,user_id) VALUES(?,?)').run(id, person));
-          audit(user.id, 'conversation_created', id); return id;
-        }); event({ kind: 'conversations', conversationId: id }, id); return json(res, 201, { id });
+        fail(403,'Birebir mesajlaşma ve kişisel grup oluşturma kapalıdır. Müdürlük odaları yönetici tarafından tanımlanır.');
       }
       match = route.match(/^\/api\/conversations\/(\d+)\/messages$/);
       if (match && req.method === 'GET') {
@@ -276,7 +275,7 @@ function createChat(options = {}) {
       }
       if (route === '/api/search' && req.method === 'GET') {
         limited(`search:${user.id}`, 60, 60000); const query = text(url.searchParams.get('q'), 2, 100, 'Arama');
-        const rows = db.prepare(`${messageSelect} JOIN members mem ON mem.conversation_id=m.conversation_id AND mem.user_id=? WHERE m.deleted_at IS NULL AND instr(fold(m.body),fold(?))>0 ORDER BY m.id DESC LIMIT 60`).all(user.id, query);
+        const rows = db.prepare(`${messageSelect} JOIN members mem ON mem.conversation_id=m.conversation_id AND mem.user_id=? JOIN conversations c ON c.id=m.conversation_id WHERE c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) AND m.deleted_at IS NULL AND instr(fold(m.body),fold(?))>0 ORDER BY m.id DESC LIMIT 60`).all(user.id,user.department_id,query);
         return json(res, 200, { messages: rows.map(messageRow) });
       }
       if (route === '/api/events' && req.method === 'GET') {
@@ -315,7 +314,7 @@ if (require.main === module) {
   const app = createChat({ tls });
   const port = Number(process.env.PORT || 8095), host = process.env.HOST || '127.0.0.1';
   app.server.listen(port, host, () => {
-    console.log(`\nKurumNet hazır: ${tls ? 'https' : 'http'}://localhost:${port}\nDinleme adresi: ${host}`);
+    console.log(`\nULAK hazır: ${tls ? 'https' : 'http'}://localhost:${port}\nDinleme adresi: ${host}`);
     if (app.setupRequired()) console.log(`\nİlk yönetici kurulum kodu (yalnızca bu bilgisayarda):\n${app.setupToken}\n\nİlk kurulum bağlantısı (bu bilgisayarda açın):\n${tls ? 'https' : 'http'}://localhost:${port}/#setup=${app.setupToken}\n`);
     if (host === '0.0.0.0') Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal).forEach(i => console.log(`Yerel ağ adresi: ${tls ? 'https' : 'http'}://${i.address}:${port}`));
   });

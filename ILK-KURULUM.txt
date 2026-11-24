@@ -1,11 +1,11 @@
-KURUMNET - İLK KURULUM
+ULAK - MÜDÜRLÜK ODAKLI KURUM İLETİŞİM ALANI
 
 1. ZIP dosyasını bir klasöre çıkarın.
 2. Node.js 24 veya üzeri kurulu olmalı. Bu bilgisayarda mevcut çalışma ortamı otomatik bulunur.
 3. BASLAT-YEREL.cmd dosyasına çift tıklayın.
 4. Açılan konsoldaki "İlk kurulum bağlantısı"nı aynı bilgisayarda tarayıcıya yapıştırın.
-5. Kendi yönetici kullanıcı adınızı ve parolanızı belirleyin.
-6. Uygulamada kalkan simgesinden çalışanları ekleyin.
+5. Kendi yönetici adınızı, müdürlüğünüzü, kullanıcı adınızı ve parolanızı belirleyin.
+6. Yönetim merkezinden müdürlükleri tanımlayın ve personeli ilgili müdürlüğe atayın.
 7. Konsolda Ctrl+C ile durdurun. Ağ kullanımı için BASLAT-AG.cmd dosyasını açın.
 8. Konsolda gösterilen yerel ağ adresini diğer kurum bilgisayarlarında açın.
 
@@ -13,5 +13,9 @@ Sunucu bilgisayarı açık kalmalı. İlk kurulum yalnızca sunucu bilgisayarın
 Windows güvenlik duvarı otomatik değiştirilmez. Ağ erişimini BT birimi düzenlemelidir.
 Gerçek/hassas kurumsal yazışmalardan önce BT birimi HTTPS yapılandırmalıdır.
 
+Örnek ortam için ONIZLEME.cmd çalıştırın ve http://127.0.0.1:8096/ adresini açın.
+Giriş ekranında örnek hesap seçebilirsiniz. Örnek parola: UlakDemo2026!
+Her personel kendi müdürlüğünün odasını ve tüm personelin ortak Genel Alan'ını görür.
+Birebir mesajlaşma kapalıdır.
 Bu sürüm dosya gönderimi veya sesli/görüntülü görüşme içermez.
 Ayrıntılı kurulum, yedekleme ve güvenlik sınırları README.md dosyasındadır.

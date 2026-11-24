@@ -1,62 +1,91 @@
-# KurumNet — Kurum içi mesajlaşma
+# ULAK — Müdürlükler için kurum iletişim alanı
 
-50–200 çalışanlı bir kurumun yerel ağında pilot kullanım için hazırlanan, tek sunuculu web uygulaması. Tarayıcılar ortak Node.js sunucusuna bağlanır; veriler sunucu bilgisayarındaki SQLite veritabanında tutulur. Bulut hesabı, internet bağlantısı veya ek npm paketi gerekmez.
+ULAK, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından oluşan** bir iletişim portalıdır. Kullanıcılar kullanıcı adı ve parolayla giriş yapar. Her personel kendi müdürlük odasına ve tüm kurum personelinin ortak **Genel Alan** odasına erişir.
 
-## İlk çalıştırma
+Kaynak depo: https://github.com/theorkun/ulak
 
-1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. Bu bilgisayardaki Codex Node çalışma ortamı da başlatma dosyaları tarafından bulunur; başka bilgisayara taşırken Node.js kurun.
-2. Önce `BASLAT-YEREL.cmd` dosyasını çalıştırın. Alternatif: `node server.cjs`.
-3. Konsolda çıkan **ilk kurulum bağlantısını** aynı bilgisayardaki tarayıcıda açın. Yönetici adını, kullanıcı adını ve en az 10 karakterli kendi parolanızı belirleyin. Kurulum kodu konsoldan forma da yazılabilir.
-4. Uygulamadaki kalkan simgesinden çalışan hesaplarını açın. Oluşturulan geçici parolayı ilgili kişiye kurumun güvenli kanalıyla iletin. İlk girişte parola değişimi zorunludur.
-5. Deneme bitince sunucuyu `Ctrl+C` ile durdurun. Yerel ağdan erişim için `BASLAT-AG.cmd` dosyasını çalıştırın. Konsolda yazan `http://SUNUCU-IP:8095` adresini kurum içindeki diğer bilgisayarlarda açın. İlk kurulum uzaktaki bir bilgisayardan yapılamaz.
+## İletişim modeli
 
-Sunucu bilgisayarı açık kalmalıdır. Windows güvenlik duvarı veya ağ cihazında değişiklik otomatik yapılmaz. Kurum BT birimi, gerekirse 8095 TCP erişimini yalnızca kurumun özel ağına açmalı; modemden internete port yönlendirmesi yapılmamalıdır.
+- **Genel Alan:** Tüm müdürlüklerin aktif personeli otomatik katılır; herkes paylaşım yapabilir.
+- **Müdürlük odası:** Her müdürlüğün tek odası vardır. Yalnızca o müdürlüğe atanmış aktif personel okuyabilir, arayabilir ve paylaşım yapabilir.
+- **Yönetim:** Yönetici müdürlük tanımlar, personel hesabı açar, müdürlük atamasını değiştirir, hesabı pasife alır veya geçici parolayı yeniler.
+- Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
+- Yönetici rolü diğer müdürlüklerin içeriklerine otomatik erişim vermez. Yönetici, müdürlük atamalarını düzenleyebilir; oda erişimi hesabın mevcut müdürlüğüne göre belirlenir.
 
-## Kullanım
+Kişisel konuşma balonları yerine ortak paylaşım kartları, kurum alanları menüsü ve alan/katılımcı bilgileri bulunan bir portal düzeni kullanılır. Paylaşımlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** paylaşımı gönderir.
 
-### Örneklerle önizleme
+## Örneklerle tarayıcı önizlemesi
 
-`ONIZLEME.cmd` dosyası veya `node preview.cjs` komutu, örnek çalışan ve sohbetlerle `http://127.0.0.1:8096/?preview=1#chat=2` adresinde geçici bir önizleme açar. Bu ortamda örnek yöneticiye otomatik giriş yapılır. Önizleme sunucusu yalnızca loopback adresini dinler; kurum ağına veya internete açılmamalıdır. Örnek veriler bellekte tutulur ve kapanınca silinir; gerçek kullanıcı veritabanı kullanılmaz. Gerçek kullanım için `server.cjs` ve yukarıdaki normal kurulum adımları geçerlidir.
+Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırın. Adres: **http://127.0.0.1:8096/**
 
-GitHub deposu kaynak kodunu saklar. Uygulamanın Node.js sunucusu gerektiği için GitHub Pages tek başına uygulamayı çalıştırmaz; normal kullanım kurum sunucusunda, örnek önizleme yerel bilgisayarda çalışır.
+Önce giriş ekranı gelir. Ekrandaki örnek hesap listesinden farklı müdürlükler seçilebilir. Örnek parola **`UlakDemo2026!`** olup yalnızca bu geçici örnek ortam için geçerlidir.
 
-- Birebir mesajlaşma ve katılımcıları seçerek grup oluşturma
-- Yeni çalışanların otomatik katıldığı **Genel sohbet**
-- Canlı mesaj güncellemeleri, çevrimiçi bilgisi ve okunmamış mesaj sayacı
-- Mesaj yanıtlama, kendi mesajını düzenleme veya sohbetten kaldırma
-- Önceki mesajları sayfalayarak yükleme; yalnızca üyesi olunan sohbetlerde metin arama
-- Çalışanları birime göre arama; telefona uyarlanan ekranlar
-- Yönetici için hesap açma, geçici parola yenileme, hesabı pasife alma ve yönetim işlem kaydı
+| Kullanıcı | Müdürlük | Yetki |
+| --- | --- | --- |
+| `demo.yonetici` | Bilgi İşlem Müdürlüğü | Yönetici |
+| `demo.insan` | İnsan Kaynakları Müdürlüğü | Personel |
+| `demo.destek` | Destek Hizmetleri Müdürlüğü | Personel |
+| `demo.mali` | Mali Hizmetler Müdürlüğü | Personel |
 
-Yönetici rolü özel sohbetleri uygulama üzerinden topluca okuma yetkisi vermez. Yalnızca sohbet üyeleri mesaj API'lerine erişebilir. Sunucu dosyalarına veya veritabanına doğrudan erişen BT yöneticisi, veritabanındaki içeriğe erişebilir.
+Her hesap Genel Alan ve kendi müdürlük odası olmak üzere iki oda görür. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
+
+## Gerçek kurum kurulumu
+
+1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. Ek npm paketi veya internet bağlantısı gerekmez. Başlatma dosyaları bu bilgisayardaki Codex Node çalışma ortamını da bulabilir; başka bilgisayara taşırken Node.js kurun.
+2. `BASLAT-YEREL.cmd` çalıştırın veya `node server.cjs` kullanın.
+3. Konsoldaki ilk kurulum bağlantısını **aynı bilgisayarda** açın. Yönetici adını, müdürlüğünü, kullanıcı adını ve en az 10 karakterli kendi parolasını belirleyin.
+4. Yönetim merkezinde müdürlükleri tanımlayın. Personel hesabı açarken ilgili müdürlüğü seçin. Yeni hesap Genel Alan ve kendi müdürlük odasına otomatik katılır.
+5. Geçici parolayı personele kurumun güvenli kanalıyla iletin. İlk girişte parola değişimi zorunludur.
+6. Sunucuyu Ctrl+C ile durdurun. Yerel ağ kullanımı için `BASLAT-AG.cmd` çalıştırın. Diğer kurum bilgisayarlarından konsolda yazan `http://SUNUCU-IP:8095` adresini açın.
+
+Sunucu bilgisayarı açık kalmalıdır. Güvenlik duvarı otomatik değiştirilmez. Kurum BT birimi erişimi yalnızca özel kurum ağına açmalı; internete port yönlendirmesi yapılmamalıdır. GitHub kaynak kodunu saklar; uygulama Node.js sunucusu gerektirdiğinden GitHub Pages üzerinde tek başına çalışmaz.
+
+## Eski sürümden geçiş
+
+Önce `node backup.cjs` ile yedek alın. Aynı `data/kurumnet.db` dosyası yeni sürümde kullanılmaya devam eder. İlk açılışta mevcut personelin birim bilgilerine göre müdürlük kayıtları ve odaları oluşturulur. Eski Genel sohbet odası Genel Alan'a dönüştürülür ve geçmişi korunur.
+
+Önceki birebir sohbetler ve serbest gruplar veritabanından silinmez; `legacy` olarak saklanır. Yeni arayüzde, mesaj API'lerinde ve aramada erişilemez. Müdürlük değişiminde eski müdürlük odasının erişimi kaldırılır, yeni müdürlüğe erişim verilir. Eski birimdeki paylaşımlar başka bir odaya taşınmaz. Değişiklikler yönetim kayıtlarına işlenir.
+
+## Özellikler
+
+- Parolalı oturum ve ilk girişte zorunlu geçici parola değişimi
+- Kurum genelinde ve müdürlük içinde canlı grup paylaşımları
+- Yanıtlama, kendi paylaşımını düzenleme ve kaldırma
+- Okunmamış paylaşım sayacı, katılımcılar ve çevrimiçi bilgisi
+- Yalnızca erişilen odalarda Türkçe metin araması ve eski paylaşımları yükleme
+- Müdürlük tanımlama ve personel atama ekranı
+- Hesap etkinleştirme/pasifleştirme, geçici parola yenileme ve yönetim işlem kayıtları
+- Mobil ekranlara uyarlanan portal ve giriş sayfası
 
 ## Veri ve güvenlik sınırları
 
-- Parolalar rastgele tuzla scrypt özeti olarak tutulur. Oturum çerezleri HttpOnly ve SameSite=Strict'tir; CSRF doğrulaması vardır. Geçici parolalar ilk girişte değiştirilir. Parola değişimi/sıfırlaması ve hesabın kapatılması eski oturumları iptal eder.
-- Varsayılan yerel/pilot bağlantı **HTTP**'dir: uçtan uca şifreleme yoktur; HTTP ağ trafiği şifrelenmez. Gerçek kurumsal ve hassas yazışmalardan önce BT tarafından güvenilir **HTTPS** yapılandırılmalıdır. TLS anahtarı ve sertifikası `TLS_KEY_FILE` / `TLS_CERT_FILE` ile verilebilir. HTTPS reverse proxy kullanılırsa `PUBLIC_ORIGIN` dış adres ve `SECURE_COOKIE=1` olarak ayarlanmalıdır. Proxy SSE yanıtlarını tamponlamamalıdır.
-- Mesajlar veritabanında açık metindir; disk erişimini ve yedekleri kurum politikalarına göre koruyun. “Sil” işlemi mesajı uygulamadan gizler; orijinal metin veritabanında kalır. Bir veri imha/kurumsal arşiv politikası uygulanmış değildir.
-- Dosya gönderme, ses/görüntülü arama, Active Directory/SSO, arka plan push bildirimi ve çok sunuculu ölçekleme bu sürümde yoktur. Tarayıcı sekmesi açıkken canlı bağlantı vardır.
-- 50–200 çalışan hedeflenmiştir. Entegrasyon/bağlantı testleri gerçek kurum ağına, sunucu donanımına ve bir sızma testine eşdeğer değildir; kurum içi yaygın kullanım öncesi pilot yapılmalıdır.
+- Parolalar scrypt ve rastgele tuzla özetlenir. Oturum çerezleri HttpOnly ve SameSite=Strict'tir. Değişiklik isteklerinde CSRF/kaynak kontrolü yapılır. Hesap kapatılınca veya parola değişince eski oturumlar geçersizleşir.
+- Varsayılan yerel/pilot bağlantı **HTTP**'dir; ağ trafiği şifrelenmez. Gerçek ve hassas kurumsal yazışmalardan önce BT tarafından güvenilir **HTTPS** yapılandırılmalıdır. Doğrudan TLS veya HTTPS reverse proxy kullanılabilir. Proxy SSE yanıtlarını tamponlamamalıdır.
+- Mesajlar SQLite veritabanında açık metindir. Sunucu dosyalarına erişebilen BT yöneticisi veritabanı içeriğine erişebilir. Uçtan uca şifreleme bulunmaz.
+- “Kaldır” paylaşımı uygulamada gizler; orijinal metin veritabanında kalır. Kurumsal veri imha/arşiv politikası bu sürümde uygulanmış değildir.
+- Dosya paylaşımı, ses/görüntülü görüşme, AD/SSO, arka plan push bildirimi ve çok sunuculu ölçekleme bu sürümde yoktur.
+- Hedef 50–200 personeldir. Yerel 200 canlı bağlantı testi, gerçek kurum ağı/donanımı üzerinde pilotun veya sızma testinin yerine geçmez.
 
 ## Ayarlar
 
 | Değişken | Varsayılan | Açıklama |
 | --- | --- | --- |
-| `HOST` | `127.0.0.1` | Yerel ağ erişimi için `0.0.0.0` |
-| `PORT` | `8095` | Sunucu portu |
+| `HOST` | `127.0.0.1` | Kurum ağı için `0.0.0.0` |
+| `PORT` | `8095` | Gerçek sunucu portu |
+| `PREVIEW_PORT` | `8096` | Geçici örnek ortam portu |
 | `ALLOWED_HOSTS` | localhost, sunucu adı ve ağ IP'leri | Virgülle ayrılmış ek intranet DNS adları |
 | `TLS_KEY_FILE`, `TLS_CERT_FILE` | boş | Doğrudan HTTPS için PEM dosyaları |
-| `PUBLIC_ORIGIN` | istek adresi | HTTPS proxy arkasındaki dış köken, ör. `https://sohbet.kurum.local` |
+| `PUBLIC_ORIGIN` | istek adresi | Reverse proxy dış kökeni, ör. `https://ulak.kurum.local` |
 | `SECURE_COOKIE` | `0` | HTTPS reverse proxy için `1` |
 
-## Yedekleme ve geri yükleme
+## Yedek ve geri yükleme
 
-`node backup.cjs` çalışırken de tutarlı SQLite yedeği oluşturur. Yedekler `data/backups/` içine yazılır; bunları sunucudan ayrı korumalı bir ortama kopyalayın. Yedekler kullanıcıları, parola özetlerini, oturumları ve mesajları içerir; herkese açık depoya yüklemeyin.
+`node backup.cjs`, çalışan veritabanından da tutarlı SQLite yedeği alır. Yedekler `data/backups/` içine yazılır; ayrı ve korumalı bir yerde saklanmalıdır. Personel, parola özetleri, oturumlar ve paylaşımlar içerdiğinden veritabanlarını veya yedekleri GitHub'a yüklemeyin.
 
-Geri yüklerken sunucuyu durdurun, mevcut `data` klasörünün tamamını ayrıca yedekleyin. Yeni, boş bir veri klasörüne seçilen yedeği `kurumnet.db` adıyla yerleştirin; eski WAL/SHM dosyalarını yeni veritabanıyla karıştırmayın. Sunucuyu başlatın. Hesaplar ve mesajlar geri gelir; güvenli geri yükleme için veritabanındaki eski oturumlar BT tarafından iptal edilmelidir.
+Geri yüklerken sunucuyu durdurun. Mevcut `data` klasörünü ayrıca yedekleyin. Yeni boş veri klasörüne seçilen yedeği `kurumnet.db` adıyla yerleştirin; eski WAL/SHM dosyalarını yeni veritabanıyla karıştırmayın. Güvenli geri yükleme için eski oturumlar BT tarafından iptal edilmelidir.
 
-## Doğrulama
+## Testler
 
 `node --test tests/*.test.cjs`
 
-Testler geçici veritabanı ve rastgele yerel port kullanır; gerçek kullanıcı verisine dokunmaz. Tarayıcı görsel doğrulamasının durumunu teslim notuyla birlikte değerlendirin.
+Testler geçici verilerle çalışır. Müdürlük erişimleri, Genel Alan üyeliği, birebir mesaj engeli, müdürlük değişimi, Türkçe arama, eski şema geçişi, parola işlemleri ve 200 ayrı canlı bağlantı kapsanır. Ekran akışları ayrıca DOM ortamında kontrol edilmiştir; bu kontrol piksel düzeyinde tarayıcı görüntülemesi değildir.
