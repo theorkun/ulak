@@ -8,7 +8,7 @@ Kaynak depo: https://github.com/theorkun/ulak
 
 Sol menüde belediyenin [resmî müdürlükler sayfasından](https://www.saricam.bel.tr/mudurlukler) 24 Kasım 2026 tarihinde kontrol edilen **29 müdürlük** yer alır. Kayıtlar `department-catalog.cjs` içinde kaynak adresi ve kontrol tarihiyle saklanır; uygulamanın çalışması için belediye sitesine veya internete bağlantı gerekmez. Sayfada kısaltılmış “Destek Hiz.” adı açık yazımıyla kullanılmıştır.
 
-Menüde Genel Alan, kullanıcının kendi müdürlüğü ve diğer müdürlükler ayrı bölümlerde gösterilir. Diğer müdürlüklerin yalnızca adları listelenir; kilit simgeli satıra tıklamak erişim açıklamasını gösterir. Paylaşımları veya personel bilgileri açılmaz. Müdürlük araması bütün dizini filtreler. Yetkiler değişmez: personel yalnızca kendi odasına ve Genel Alan'a erişebilir.
+Menüde Genel Alan ve kullanıcının kendi müdürlüğü doğrudan gösterilir. Diğer müdürlükler açılır bir listede toplanır; arama sırasında liste otomatik açılır. Kilit simgeli satıra tıklamak erişim açıklamasını gösterir. Paylaşımları veya personel bilgileri açılmaz. Müdürlük araması bütün dizini filtreler. Yetkiler değişmez: personel yalnızca kendi odasına ve Genel Alan'a erişebilir.
 
 Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yönetici listeden müdürlüğü seçebilir. Önceki “İnsan Kaynakları Müdürlüğü” gibi bilinen kısa adlar, resmî ad henüz ayrı bir kayıt olarak yoksa oda geçmişi ve personel atamaları korunarak resmî ada güncellenir. Kurumun ayrıca tanımladığı özel birimler silinmez.
 
@@ -20,7 +20,7 @@ Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yö
 - Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
 - Yönetici rolü diğer müdürlüklerin içeriklerine otomatik erişim vermez. Yönetici, müdürlük atamalarını düzenleyebilir; oda erişimi hesabın mevcut müdürlüğüne göre belirlenir.
 
-Kişisel konuşma balonları yerine ortak paylaşım kartları, kurum alanları menüsü ve alan/katılımcı bilgileri bulunan bir portal düzeni kullanılır. Paylaşımlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** paylaşımı gönderir.
+Arayüz sade bir giriş formu, solda alanlar menüsü ve tek sütun mesaj akışından oluşur. Katılımcılar alan başlığındaki düğmeden açılır. Yönetimde personel ve müdürlük ekleme formları açılır bölümlerdedir; mevcut personel ad, kullanıcı adı veya müdürlüğe göre filtrelenebilir. Mesajlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** mesajı gönderir.
 
 ## Örneklerle tarayıcı önizlemesi
 
