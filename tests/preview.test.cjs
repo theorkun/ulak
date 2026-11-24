@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {startPreview}=require('../preview.cjs');
 test('preview requires real demo password login and restricts users to two rooms',async t=>{
   const preview=await startPreview({port:0,quiet:true});t.after(()=>preview.close());assert.equal(preview.server.address().address,'127.0.0.1');const base=`http://127.0.0.1:${preview.server.address().port}`;
-  const status=await(await fetch(base+'/api/status')).json();assert.equal(status.preview,true);assert.equal(status.setupRequired,false);assert.equal(status.previewAccounts.length,8);
+  const status=await(await fetch(base+'/api/status')).json();assert.equal(status.preview,true);assert.equal(status.setupRequired,false);assert.equal('previewAccounts' in status,false);assert.equal('previewPassword' in status,false);
   assert.equal((await fetch(base+'/api/me')).status,401);
   async function login(username,password){const r=await fetch(base+'/api/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username,password})});return{status:r.status,cookie:r.headers.get('set-cookie')?.split(';')[0],data:await r.json()};}
   assert.equal((await login('demo.insan','bad')).status,401);const user=await login('demo.insan','UlakDemo2026!');assert.equal(user.status,200);

@@ -36,7 +36,7 @@ Arayüz sade bir giriş formu, solda alanlar menüsü ve tek sütun mesaj akış
 
 Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırın. Adres: **http://127.0.0.1:8096/**
 
-Önce giriş ekranı gelir. Ekrandaki örnek hesap listesinden farklı müdürlükler seçilebilir. Örnek parola **`UlakDemo2026!`** olup yalnızca bu geçici örnek ortam için geçerlidir.
+Önce boş giriş formu gelir; örnek hesap seçicisi ve otomatik parola doldurma kaldırılmıştır. Geliştirme kontrolü için aşağıdaki kullanıcı adını kendiniz yazın. Örnek parola **`UlakDemo2026!`** olup yalnızca geçici örnek ortam için geçerlidir. Gerçek kurum kurulumunda bu hesaplar oluşturulmaz.
 
 | Kullanıcı | Müdürlük | Yetki |
 | --- | --- | --- |
@@ -48,6 +48,28 @@ Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırı
 Her hesap Genel Alan ve kendi müdürlük odasını kullanabilir. Diğer müdürlüklerin adları sol menüde kilitli olarak listelenir. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
 
 ## Gerçek kurum kurulumu
+
+### Şifremi unuttum ve iletişim kayıtları
+
+Giriş ekranındaki **Şifremi unuttum** bağlantısı e-posta veya SMS yöntemini sunar. Kullanıcı yalnızca kullanıcı adını girer; kod, kullanıcının o anda yazdığı bir adrese değil, yöneticinin kurum kayıtlarından doğrulayarak kaydettiği e-posta/telefon bilgisine gönderilir. Yönetimde yeni personel formundaki alanlar veya mevcut personelin **İletişim** düğmesi kullanılır. Telefon ve e-posta grup üyelerine gösterilmez.
+
+Gönderim hizmeti bağlantıları henüz sağlanmadığından yöntemler başlangıçta pasiftir. GitHub Pages demosu gerçek SMS/e-posta göndermez ve gerçek hesap kurtarmaz. Kurum hizmetinin API bilgileri geldiğinde aşağıdaki sunucu entegrasyonu sağlayıcının protokolüne uyarlanmalıdır; doğrudan SMTP hesabı bağlamak ayrıca SMTP adaptörü gerektirir.
+
+Sunucu, isteğe bağlı HTTPS teslim ağ geçidi sözleşmesini destekler:
+
+- `RESET_DELIVERY_URL`: kurumun doğruladığı HTTPS ağ geçidi adresi.
+- `RESET_DELIVERY_TOKEN`: yalnızca sunucu ortamında tutulan erişim anahtarı; GitHub'a veya `docs/` içine konmaz.
+- `RESET_CHANNELS`: bağlanan yöntemler (`email`, `sms` veya `email,sms`).
+- İstek: `POST`, `Authorization: Bearer …`; JSON: `{ "purpose":"ulak-password-reset", "channel":"email veya sms", "to":"kayıtlı adres veya numara", "code":"6 haneli kod", "expiresAt":"ISO tarih" }`. Ağ geçidi kabul ettiğinde 2xx döndürmelidir; yönlendirmeler izlenmez, 8 saniye zaman aşımı vardır.
+- Servis sağlayıcı sözleşmesi farklıysa `createChat({recoveryDelivery, recoveryChannels})` ile sunucu adaptörü eklenebilir. Sağlayıcıya erişmek için kurum sunucusunda gerekli dış bağlantı izni bulunmalıdır.
+
+Kod 10 dakika geçerli ve tek kullanımlıktır; veritabanında kodun özeti tutulur. Beş başarısız denemede işlem kapanır. IP/kullanıcı bazında talep sınırları uygulanır. Bilinmeyen kullanıcılar da aynı genel yanıtı alır. Başarılı yenileme bütün oturumları kapatır; yeni kod, iletişim bilgisi değişikliği, hesap kapatma ve başka parola değişiklikleri eski kodları iptal eder. Kod veya hizmet anahtarı istemci yanıtına/işlem kaydına yazılmaz. Gönderim hatası içerik taşımayan `recovery_delivery_failed` işlem kaydı oluşturur. Servis aktif olduğunda HTTPS ve güvenli çerez ayarları kullanılmalıdır.
+
+### Bilgilendirme metinleri
+
+KVKK aydınlatma, kullanım koşulları ve çerez metinleri giriş yapmadan açılır. Aydınlatma ve kullanım metinleri **kurum incelemesi için taslaktır**. Veri işleme şartları, hizmet sağlayıcılar ve aktarım durumu, saklama/imha süreleri ve resmî başvuru kanalı belediye tarafından kesinleştirilmelidir. Kaynak: [KVKK aydınlatma yükümlülüğü](https://www.kvkk.gov.tr/Icerik/2033/Aydinlatma-Yukumlulugu-). Aydınlatma açık rıza olarak gösterilmez; girişte zorunlu rıza kutusu bulunmaz. Bu uygulama mesaj, personel, işlem ve yedek kayıtları için henüz otomatik süreli imha yapmaz.
+
+### Kurulum adımları
 
 1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. Ek npm paketi veya internet bağlantısı gerekmez. Başlatma dosyaları bu bilgisayardaki Codex Node çalışma ortamını da bulabilir; başka bilgisayara taşırken Node.js kurun.
 2. `BASLAT-YEREL.cmd` çalıştırın veya `node server.cjs` kullanın.

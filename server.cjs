@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { DatabaseSync } = require('node:sqlite');
 const { createRooms } = require('./rooms.cjs');
+const { createRecovery, contacts } = require('./recovery.cjs');
 const scrypt = promisify(crypto.scrypt);
 const fold = value => String(value).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
@@ -104,6 +105,7 @@ function createChat(options = {}) {
     try { const value = JSON.parse(data); if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(); return value; } catch { fail(400, 'Geçersiz istek.'); }
   }
   const admin = user => { if (user.role !== 'admin') fail(403, 'Bu işlem yönetici yetkisi gerektirir.'); };
+  const recovery=createRecovery({db,options,limited,passwordHash,audit,transaction,endSessions:id=>{for(const c of clients)if(c.userId===id)c.res.end();}});
   async function handle(req, res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
@@ -117,7 +119,9 @@ function createChat(options = {}) {
       const expected = options.publicOrigin || process.env.PUBLIC_ORIGIN || `${options.tls ? 'https' : 'http'}://${req.headers.host}`;
       if (req.headers.origin !== expected) fail(403, 'İstek kaynağı doğrulanamadı.');
     }
-    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'ULAK', preview: options.preview === true, ...(options.preview ? { previewAccounts: db.prepare("SELECT username,name,department FROM users WHERE active=1 AND username LIKE 'demo.%' ORDER BY id").all(), previewPassword: 'UlakDemo2026!' } : {}), localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
+    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'ULAK', preview: options.preview === true, recoveryChannels:recovery.channels, localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
+    if (route === '/api/recovery/request' && req.method === 'POST') return json(res,200,await recovery.request(await body(req),req.socket.remoteAddress));
+    if (route === '/api/recovery/confirm' && req.method === 'POST') return json(res,200,await recovery.confirm(await body(req),req.socket.remoteAddress));
     if (route === '/api/setup' && req.method === 'POST') {
       limited(`setup:${req.socket.remoteAddress}`, 10, 60000);
       if (countUsers()) fail(409, 'Kurulum zaten tamamlandı.');
@@ -162,7 +166,7 @@ function createChat(options = {}) {
         const password = await passwordHash(input.password);
         // Recheck session after the asynchronous password operation.
         session(req);
-        transaction(() => { db.prepare('UPDATE users SET password=?,must_change=0 WHERE id=?').run(password, user.id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id); audit(user.id, 'password_changed', user.id); });
+        transaction(() => { db.prepare('UPDATE users SET password=?,must_change=0 WHERE id=?').run(password, user.id); recovery.invalidate(user.id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id); audit(user.id, 'password_changed', user.id); });
         for (const c of clients) if (c.userId === user.id) c.res.end();
         return json(res, 200, { ok: true, csrf: issueSession(res, user.id), user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(user.id)) });
       }
@@ -177,7 +181,7 @@ function createChat(options = {}) {
       }
       if (route === '/api/admin/departments' && req.method === 'GET') { admin(user); return json(res,200,{ departments: db.prepare('SELECT d.id,d.name,(SELECT count(*) FROM users u WHERE u.department_id=d.id AND u.active=1) people FROM departments d ORDER BY d.name').all() }); }
       if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); event({kind:'directory'}); return json(res,201,{department:dept}); }
-      if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT id,username,name,department,department_id,role,active,must_change FROM users ORDER BY active DESC,name').all().map(publicUser) }); }
+      if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT * FROM users ORDER BY active DESC,name').all().map(u=>({...publicUser(u),email:u.email,phone:u.phone})) }); }
       if (route === '/api/admin/users' && req.method === 'POST') {
         admin(user); const input = await body(req);
         const username = text(input.username, 3, 40, 'Kullanıcı adı').toLowerCase(), name = text(input.name, 2, 80, 'Ad soyad');
@@ -187,10 +191,12 @@ function createChat(options = {}) {
         if (!/^[a-z0-9._-]+$/.test(username)) fail(400, 'Kullanıcı adı İngilizce harf, rakam, nokta ve tire içermeli.');
         if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail(409, 'Bu kullanıcı adı zaten var.');
         const temporaryPassword = crypto.randomBytes(12).toString('base64url');
+        const contact=contacts(input);
         const password = await passwordHash(temporaryPassword); session(req);
         const id = transaction(() => {
           const id = Number(db.prepare('INSERT INTO users(username,name,department,password,role,must_change) VALUES(?,?,?,?,?,1)').run(username, name, department, password, input.role === 'admin' ? 'admin' : 'member').lastInsertRowid);
           rooms.sync(id);
+          db.prepare('UPDATE users SET email=?,phone=? WHERE id=?').run(contact.email,contact.phone,id);
           audit(user.id, 'user_created', id); return id;
         }); event({ kind: 'directory' });
         return json(res, 201, { user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(id)), temporaryPassword });
@@ -200,10 +206,14 @@ function createChat(options = {}) {
         admin(user); const id = Number(match[1]), input = await body(req);
         const target = db.prepare('SELECT * FROM users WHERE id=?').get(id); if (!target) fail(404, 'Kullanıcı bulunamadı.');
         if (id === user.id && input.active === false) fail(400, 'Kendi hesabınızı kapatamazsınız.');
-        if (typeof input.active !== 'boolean' && input.departmentId == null) fail(400,'Aktiflik veya müdürlük bilgisi gerekli.');
+        const changeContact=Object.hasOwn(input,'email')||Object.hasOwn(input,'phone');
+        const contact=changeContact?contacts({email:input.email??target.email,phone:input.phone??target.phone}):null;
+        if (typeof input.active !== 'boolean' && input.departmentId == null && !changeContact) fail(400,'Güncellenecek bilgi gerekli.');
         const dept = input.departmentId != null ? db.prepare('SELECT * FROM departments WHERE id=?').get(Number(input.departmentId)) : null;
         if (input.departmentId != null && !dept) fail(400,'Müdürlük bulunamadı.');
         transaction(() => {
+          if(contact){db.prepare('UPDATE users SET email=?,phone=? WHERE id=?').run(contact.email,contact.phone,id);audit(user.id,'contact_changed',id);}
+          if(contact||typeof input.active==='boolean')recovery.invalidate(id);
           if (typeof input.active === 'boolean') { db.prepare('UPDATE users SET active=? WHERE id=?').run(input.active ? 1 : 0,id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id,input.active?'user_enabled':'user_disabled',id); }
           if (dept) { db.prepare('UPDATE users SET department_id=?,department=? WHERE id=?').run(dept.id,dept.name,id); audit(user.id,'department_changed',id); }
           rooms.sync(id);
@@ -216,7 +226,7 @@ function createChat(options = {}) {
         if (id === user.id) fail(400, 'Kendi parolanızı profil ekranından değiştirin.');
         if (!db.prepare('SELECT id FROM users WHERE id=?').get(id)) fail(404, 'Kullanıcı bulunamadı.');
         const temporaryPassword = crypto.randomBytes(12).toString('base64url'), password = await passwordHash(temporaryPassword); session(req);
-        transaction(() => { db.prepare('UPDATE users SET password=?,must_change=1 WHERE id=?').run(password, id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id, 'password_reset', id); });
+        transaction(() => { db.prepare('UPDATE users SET password=?,must_change=1 WHERE id=?').run(password, id); recovery.invalidate(id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id, 'password_reset', id); });
         for (const c of clients) if (c.userId === id) c.res.end(); return json(res, 200, { temporaryPassword });
       }
       if (route === '/api/admin/audit' && req.method === 'GET') { admin(user); return json(res, 200, { entries: db.prepare('SELECT a.*,u.name actor FROM audit a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.id DESC LIMIT 100').all() }); }
@@ -296,7 +306,7 @@ function createChat(options = {}) {
       fail(404, 'İşlem bulunamadı.');
     }
     if (!['GET', 'HEAD'].includes(req.method)) fail(405, 'Yöntem desteklenmiyor.');
-    const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
+    const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/auth.js': ['auth.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
     res.writeHead(200, { 'Content-Type': `${file[1]}; charset=utf-8`, 'Cache-Control': 'no-cache' });
     if (req.method === 'HEAD') res.end(); else res.end(fs.readFileSync(path.join(__dirname, 'public', file[0])));

@@ -29,13 +29,11 @@ async function boot(){
     const status=await api('/api/status');state.setup=status.setupRequired;state.preview=status.preview===true;
     if(state.preview){
       document.body.classList.add('preview-mode');const note=document.createElement('div');note.className='preview-note';note.textContent=status.browserDemo?'Demo · Bu tarayıcıya özel · Yenilenince sıfırlanır':'Önizleme · Örnek veriler';document.body.prepend(note);
-      if(status.browserDemo){$('#auth-help').textContent='Yalnızca örnek veriler kullanın. Bu demo gerçek kurum sunucusuna bağlı değildir.';$('#preview-accounts p:last-child').textContent='Demo verileri sayfa yenilenince silinir; diğer ziyaretçilerle paylaşılmaz.';}
-      $('#preview-accounts').hidden=false;
-      $('#demo-account').innerHTML=status.previewAccounts.map(u=>`<option value="${esc(u.username)}">${esc(u.name)} · ${esc(u.department)}</option>`).join('');
-      $('#demo-password').textContent=status.previewPassword;
-      const fill=()=>{$('#login-username').value=$('#demo-account').value;$('#login-password').value=status.previewPassword;};$('#demo-account').addEventListener('change',fill);fill();
+      if(status.browserDemo)$('#auth-help').textContent='Bu ekran önizlemedir. Gerçek kurum hesabı veya kişisel bilgi kullanmayın.';
     }
+    state.recoveryChannels=status.recoveryChannels||{};
     if(state.setup){
+      $('#forgot-password').hidden=true;
       $('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent=status.localSetup?'Sunucu konsolundaki kodla yönetici hesabınızı oluşturun.':'Kurulum sunucu bilgisayarında yapılmalı.';
       $('#setup-fields').hidden=!status.localSetup;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=status.localSetup);$('#auth-submit').disabled=!status.localSetup;$('#auth-submit').textContent='Kurum hesabını oluştur';$('#login-password').minLength=10;$('#login-password').autocomplete='new-password';
       const token=new URLSearchParams(location.hash.slice(1)).get('setup');if(token){$('#setup-token').value=token;history.replaceState(null,'','/');}return;
@@ -49,9 +47,10 @@ $('#auth-form').addEventListener('submit',async e=>{
 });
 async function enter(me){state.user=me.user;state.csrf=me.csrf;$('#auth-screen').hidden=true;$('#workspace').hidden=false;profile();if(state.user.mustChangePassword){passwordDialog();return;}await refresh(true);connect();if(!state.active){const room=state.rooms.find(r=>r.scope==='general')||state.rooms[0];if(room)await openRoom(room.id);}}
 function signOut(){
+  $('#forgot-password').hidden=false;
   state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.directory=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
   $$('dialog[open]').forEach(d=>d.close());$('#workspace').hidden=true;$('#auth-screen').hidden=false;$('#conversation-list').replaceChildren();$('#message-feed').replaceChildren();$('#message-input').value='';$('#chat-section').hidden=true;$('#welcome').hidden=false;
-  $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';if(state.preview)$('#demo-account').dispatchEvent(new Event('change'));
+  $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';
 }
 $('#logout').addEventListener('click',async()=>{state.source?.close();try{await api('/api/logout',{});signOut();}catch(e){toast(e.message);if(state.user)connect();}});
 function connect(){state.source?.close();if(window.ULAK_DEMO){$('#connection-text').textContent='Tarayıcı demosu';return;}const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>scheduleRefresh(JSON.parse(e.data)));source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
@@ -121,7 +120,7 @@ function departmentOptions(selected){return state.departments.map(d=>`<option va
 function renderAdminUsers(){
   const query=fold($('#admin-user-filter').value);
   const people=state.adminUsers.filter(u=>fold(u.name+' '+u.username+' '+u.department).includes(query));
-  $('#admin-users').innerHTML=people.map(u=>`<div class="admin-user ${u.active?'':'inactive'}"><div><strong>${esc(u.name)}</strong><p>${esc(u.username)} · ${u.role==='admin'?'Yönetici':'Personel'} · ${u.active?'Aktif':'Pasif'}</p></div><select data-assignment="${u.id}" aria-label="${esc(u.name)} müdürlüğü">${departmentOptions(u.departmentId)}</select><button data-assign-save="${u.id}">Ata</button>${u.id!==state.user.id?`<button data-reset-user="${u.id}">Parola yenile</button><button data-toggle-user="${u.id}">${u.active?'Pasife al':'Etkinleştir'}</button>`:''}</div>`).join('')||'<p class="muted small">Personel bulunamadı.</p>';
+  $('#admin-users').innerHTML=people.map(u=>`<div class="admin-user ${u.active?'':'inactive'}"><div><strong>${esc(u.name)}</strong><p>${esc(u.username)} · ${u.role==='admin'?'Yönetici':'Personel'} · ${u.active?'Aktif':'Pasif'}</p></div><select data-assignment="${u.id}" aria-label="${esc(u.name)} müdürlüğü">${departmentOptions(u.departmentId)}</select><button data-contact-user="${u.id}">İletişim</button><button data-assign-save="${u.id}">Ata</button>${u.id!==state.user.id?`<button data-reset-user="${u.id}">Parola yenile</button><button data-toggle-user="${u.id}">${u.active?'Pasife al':'Etkinleştir'}</button>`:''}</div>`).join('')||'<p class="muted small">Personel bulunamadı.</p>';
 }
 $('#admin-user-filter').addEventListener('input',renderAdminUsers);
 async function adminPanel(){
@@ -129,7 +128,7 @@ async function adminPanel(){
     const [people,depts,audit]=await Promise.all([api('/api/admin/users'),api('/api/admin/departments'),api('/api/admin/audit')]);state.adminUsers=people.users;state.departments=depts.departments;
     $('#user-department').innerHTML=departmentOptions(state.user.departmentId);$('#department-list').innerHTML=state.departments.map(d=>`<span class="department-tag">${esc(d.name)} · ${d.people} personel</span>`).join('');
     renderAdminUsers();
-    const labels={setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
+    const labels={contact_changed:'İletişim bilgileri değişti',password_recovered:'Parola kurtarıldı',recovery_delivery_failed:'Kurtarma iletisi gönderilemedi',setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
     $('#audit-list').innerHTML=audit.entries.map(a=>`<div class="audit-entry">${esc(day(a.created_at))} ${clock(a.created_at)} · ${esc(a.actor||'Sistem')} · ${esc(labels[a.action]||a.action)} · Kayıt ${esc(a.target)}</div>`).join('');
   }catch(error){$('#admin-error').textContent=error.message;}
 }

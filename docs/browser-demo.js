@@ -19,7 +19,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
   const now=()=>new Date().toISOString();
   const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
   const fold=s=>String(s).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
-  const publicUser=u=>{const {password,...user}=u;return {...user,online:u.id===current?.id};};
+  const publicUser=u=>{const {password,email,phone,...user}=u;return {...user,online:u.id===current?.id};};
   const me=()=>({user:publicUser(current),csrf:'browser-demo'});
   const log=(action,target)=>audit.unshift({action,target,actor:current.name,created_at:now()});
   const roomId=id=>id+1;
@@ -41,7 +41,8 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
   window.ULAK_DEMO={async request(route,input={},method){
     const verb=method||(input&&Object.keys(input).length?'POST':'GET');
     const url=new URL(route,'https://demo.invalid'),path=url.pathname;input=input||{};
-    if(path==='/api/status')return{setupRequired:false,preview:true,browserDemo:true,previewPassword:password,previewAccounts:people.filter(p=>p.username.startsWith('demo.')&&p.active).map(publicUser)};
+    if(path==='/api/status')return{setupRequired:false,preview:true,browserDemo:true,recoveryChannels:{email:false,sms:false}};
+    if(path.startsWith('/api/recovery/'))fail(503,'E-posta ve SMS gönderimi bu önizlemede etkin değildir.');
     if(path==='/api/login'&&verb==='POST'){
       const user=people.find(p=>p.active&&p.username===String(input.username).trim().toLowerCase()&&p.password===input.password);
       if(!user)fail(401,'Kullanıcı adı veya parola hatalı.');current=user;return me();
@@ -83,16 +84,17 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
         const d={id:Math.max(...departments.map(d=>d.id))+1,name,official:false};departments.push(d);log('department_created',d.id);return{department:d};
       }
       if(path==='/api/admin/users'){
-        if(verb==='GET')return{users:people.map(publicUser)};
+        if(verb==='GET')return{users:people.map(u=>({...publicUser(u),email:u.email||'',phone:u.phone||''}))};
         const username=validText(input.username,3,40,'Kullanıcı adı').toLowerCase(),name=validText(input.name,2,80,'Ad soyad'),d=departments.find(d=>d.id===Number(input.departmentId));
         if(!/^[a-z0-9._-]+$/.test(username)||!d||!['admin','member'].includes(input.role))fail(400,'Bilgileri kontrol edin.');
         if(people.some(p=>p.username===username))fail(409,'Kullanıcı adı zaten var.');
         const temporaryPassword='Demo-'+crypto.randomUUID().slice(0,12)+'!';
-        const user={id:Math.max(...people.map(p=>p.id))+1,username,name,department:d.name,departmentId:d.id,role:input.role,active:true,mustChangePassword:true,password:temporaryPassword};people.push(user);log('user_created',user.id);return{user:publicUser(user),temporaryPassword};
+        const user={id:Math.max(...people.map(p=>p.id))+1,username,name,department:d.name,departmentId:d.id,role:input.role,active:true,mustChangePassword:true,password:temporaryPassword,email:String(input.email||''),phone:String(input.phone||'')};people.push(user);log('user_created',user.id);return{user:publicUser(user),temporaryPassword};
       }
       match=path.match(/^\/api\/admin\/users\/(\d+)(\/reset)?$/);
       if(match){
         const user=people.find(p=>p.id===Number(match[1]));if(!user)fail(404,'Personel bulunamadı.');
+        if(Object.hasOwn(input,'email')||Object.hasOwn(input,'phone')){user.email=String(input.email??user.email??'');user.phone=String(input.phone??user.phone??'');log('contact_changed',user.id);}
         if(match[2]){if(user.id===current.id)fail(400,'Kendi parolanızı profilinizden değiştirin.');const temporaryPassword='Demo-'+crypto.randomUUID().slice(0,12)+'!';user.password=temporaryPassword;user.mustChangePassword=true;log('password_reset',user.id);return{temporaryPassword};}
         if(input.departmentId){const d=departments.find(d=>d.id===Number(input.departmentId));if(!d)fail(400,'Müdürlük bulunamadı.');user.departmentId=d.id;user.department=d.name;log('department_changed',user.id);}
         if(typeof input.active==='boolean'){if(user.id===current.id)fail(400,'Kendi hesabınızı kapatamazsınız.');user.active=input.active;log(user.active?'user_enabled':'user_disabled',user.id);}
