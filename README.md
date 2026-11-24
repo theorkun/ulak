@@ -8,7 +8,7 @@ Arayüzde Selçuklu turkuazı (`#008C95`), koyu lacivert (`#132A45`) ve altın s
 
 ## GitHub üzerinden tarayıcı demosu
 
-**[Demoyu aç](https://theorkun.github.io/ulak/)** · Örnek kullanıcı: `demo.yonetici` · Örnek parola: `UlakDemo2026!`
+**[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme yöneticisi: `orkun` · Parola: `admin`
 
 Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Genel Alan, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
 
@@ -36,11 +36,11 @@ Arayüz sade bir giriş formu, solda alanlar menüsü ve tek sütun mesaj akış
 
 Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırın. Adres: **http://127.0.0.1:8096/**
 
-Önce boş giriş formu gelir; örnek hesap seçicisi ve otomatik parola doldurma kaldırılmıştır. Geliştirme kontrolü için aşağıdaki kullanıcı adını kendiniz yazın. Örnek parola **`UlakDemo2026!`** olup yalnızca geçici örnek ortam için geçerlidir. Gerçek kurum kurulumunda bu hesaplar oluşturulmaz.
+Önce boş giriş formu gelir; örnek hesap seçicisi ve otomatik parola doldurma kaldırılmıştır. Önizleme yönetici hesabı **`orkun` / `admin`** olarak ayarlanmıştır. Diğer örnek personel hesaplarının parolası **`UlakDemo2026!`** olarak kalır. Bu bilgiler yalnızca geçici örnek ortam içindir; gerçek kurum kurulumunda bu hesaplar oluşturulmaz.
 
 | Kullanıcı | Müdürlük | Yetki |
 | --- | --- | --- |
-| `demo.yonetici` | Bilgi İşlem Müdürlüğü | Yönetici |
+| `orkun` | Bilgi İşlem Müdürlüğü | Yönetici |
 | `demo.insan` | İnsan Kaynakları Müdürlüğü | Personel |
 | `demo.destek` | Destek Hizmetleri Müdürlüğü | Personel |
 | `demo.mali` | Mali Hizmetler Müdürlüğü | Personel |

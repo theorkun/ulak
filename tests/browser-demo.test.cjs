@@ -22,7 +22,7 @@ test('Pages demo enforces simulated login, room scope and message ownership with
   await request('/api/messages/'+message.id,null,'DELETE');assert.equal((await request('/api/search?q=Edited')).messages.length,0);
 });
 test('Pages demo account creation, forced password change and reassignment stay in disposable memory',async()=>{
-  const request=demo();await request('/api/login',{username:'demo.yonetici',password:'UlakDemo2026!'});
+  const request=demo();await request('/api/login',{username:'orkun',password:'admin'});
   const {department}=await request('/api/admin/departments',{name:'Example Directorate'});
   const created=await request('/api/admin/users',{name:'Example Person',username:'example.person',role:'member',departmentId:department.id});
   assert.equal('password' in created.user,false);
@@ -30,7 +30,7 @@ test('Pages demo account creation, forced password change and reassignment stay 
   await assert.rejects(request('/api/conversations'),{status:428});
   await request('/api/password',{currentPassword:created.temporaryPassword,password:'Example-new-password!'});
   assert.ok((await request('/api/conversations')).conversations.some(r=>r.title==='Example Directorate'));
-  await request('/api/logout',{});await request('/api/login',{username:'demo.yonetici',password:'UlakDemo2026!'});
+  await request('/api/logout',{});await request('/api/login',{username:'orkun',password:'admin'});
   const dept=(await request('/api/directory')).departments[0];await request('/api/admin/users/'+created.user.id,{departmentId:dept.id},'PATCH');
   await request('/api/logout',{});await request('/api/login',{username:'example.person',password:'Example-new-password!'});
   assert.equal((await request('/api/conversations')).conversations[1].title,dept.name);

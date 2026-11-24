@@ -6,7 +6,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
   const password='UlakDemo2026!';
   const departments=window.ULAK_DEMO_DEPARTMENTS.map((name,i)=>({id:i+1,name,official:true}));
   const people=[
-    ['demo.yonetici','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
+    ['orkun','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
     ['demo.insan','Elif Demir','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.destek','Mert Kaya','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.mali','Zeynep Arslan','Mali Hizmetler Müdürlüğü','member'],
@@ -14,7 +14,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
     ['demo.personel','Esra Koç','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.teknik','Can Aksoy','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
-  ].map(([username,name,department,role],i)=>({id:i+1,username,name,department,departmentId:departments.find(d=>d.name===department).id,role,active:true,mustChangePassword:false,password}));
+  ].map(([username,name,department,role],i)=>({id:i+1,username,name,department,departmentId:departments.find(d=>d.name===department).id,role,active:true,mustChangePassword:false,password:username==='orkun'?'admin':password}));
   const messages=[],audit=[],reads=new Map();let current=null,nextMessage=1;
   const now=()=>new Date().toISOString();
   const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};

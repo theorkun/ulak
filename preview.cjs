@@ -7,8 +7,9 @@ async function startPreview(options={}){
   const app=createChat({dbPath:':memory:',preview:true});
   const salt=crypto.randomBytes(16).toString('hex');
   const password=salt+':'+(await promisify(crypto.scrypt)('UlakDemo2026!',salt,64)).toString('hex');
+  const adminPassword=salt+':'+(await promisify(crypto.scrypt)('admin',salt,64)).toString('hex');
   const people=[
-    ['demo.yonetici','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
+    ['orkun','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
     ['demo.insan','Elif Demir','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.destek','Mert Kaya','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.mali','Zeynep Arslan','Mali Hizmetler Müdürlüğü','member'],
@@ -17,7 +18,7 @@ async function startPreview(options={}){
     ['demo.teknik','Can Aksoy','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
   ];
-  for(const [username,name,department,role]of people)app.db.prepare('INSERT INTO users(username,name,department,role,password) VALUES(?,?,?,?,?)').run(username,name,department,role,password);
+  for(const [username,name,department,role]of people)app.db.prepare('INSERT INTO users(username,name,department,role,password) VALUES(?,?,?,?,?)').run(username,name,department,role,username==='orkun'?adminPassword:password);
   createRooms(app.db);
   const general=app.db.prepare("SELECT id FROM conversations WHERE scope='general'").get().id;
   const room=name=>app.db.prepare("SELECT c.id FROM conversations c JOIN departments d ON d.id=c.department_id WHERE c.scope='department' AND d.name=?").get(name).id;
@@ -36,7 +37,7 @@ async function startPreview(options={}){
   post(room('Mali Hizmetler Müdürlüğü'),4,'Müdürlük içi bütçe değerlendirmesinin gündemini bu alanda toparlayalım.',23);
   const port=options.port??Number(process.env.PREVIEW_PORT||8096);
   await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(port,'127.0.0.1',resolve);});
-  if(!options.quiet){console.log(`ULAK önizleme: http://127.0.0.1:${app.server.address().port}/`);console.log('Örnek kullanıcı: demo.yonetici | Örnek parola: UlakDemo2026!');console.log('Giriş ekranından farklı müdürlük hesapları seçilebilir. Veriler kapanınca silinir.');}
+  if(!options.quiet){console.log(`ULAK önizleme: http://127.0.0.1:${app.server.address().port}/`);console.log('Önizleme yöneticisi: orkun | Parola: admin');console.log('Giriş bilgilerini elle yazın. Veriler kapanınca silinir.');}
   let stopping=false;const close=async()=>{if(stopping)return;stopping=true;await app.close();};
   if(require.main===module){process.on('SIGINT',close);process.on('SIGTERM',close);}
   return{app,server:app.server,close};
