@@ -7,7 +7,7 @@ $$('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 const initials = name => String(name).split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toLocaleUpperCase('tr');
 const clock = value => new Date(value).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
 const day = value => new Date(value).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
-const state = { user:null,csrf:'',rooms:[],active:null,messages:[],more:false,history:false,version:0,reply:null,edit:null,sending:false,source:null,preview:false,setup:false,drafts:new Map(),departments:[],adminUsers:[] };
+const state = { user:null,csrf:'',rooms:[],directory:[],active:null,messages:[],more:false,history:false,version:0,reply:null,edit:null,sending:false,source:null,preview:false,setup:false,drafts:new Map(),departments:[],adminUsers:[] };
 let toastTimer,refreshTimer,returnFocus,pendingMessage=false,pendingDirectory=false,pendingSend=null;
 $('#today-date').textContent=new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',weekday:'long'});
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),4000);}
@@ -48,7 +48,7 @@ $('#auth-form').addEventListener('submit',async e=>{
 });
 async function enter(me){state.user=me.user;state.csrf=me.csrf;$('#auth-screen').hidden=true;$('#workspace').hidden=false;profile();if(state.user.mustChangePassword){passwordDialog();return;}await refresh(true);connect();if(!state.active){const room=state.rooms.find(r=>r.scope==='general')||state.rooms[0];if(room)await openRoom(room.id);}}
 function signOut(){
-  state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
+  state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.directory=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
   $$('dialog[open]').forEach(d=>d.close());$('#workspace').hidden=true;$('#auth-screen').hidden=false;$('#conversation-list').replaceChildren();$('#message-feed').replaceChildren();$('#room-members').replaceChildren();$('#message-input').value='';$('#chat-section').hidden=true;$('#welcome').hidden=false;
   $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent='Kurumunuza bağlanın.';$('#auth-eyebrow').textContent='ÇALIŞMA ALANINIZA HOŞ GELDİNİZ';$('#auth-description').textContent='Kullanıcı adınız ve parolanızla giriş yapın.';$('#auth-submit').textContent='Çalışma alanına giriş yap';if(state.preview)$('#demo-account').dispatchEvent(new Event('change'));
 }
@@ -59,14 +59,18 @@ function scheduleRefresh(value={}){
   refreshTimer=setTimeout(async()=>{if(!state.user||state.user.mustChangePassword)return;try{const directory=pendingDirectory;pendingDirectory=false;await refresh(directory);if(pendingMessage&&state.active){pendingMessage=false;if(state.history)$('#jump-latest').hidden=false;else await loadMessages(false);}}catch(e){if(state.user)toast(e.message);}},180);
 }
 async function refresh(includeIdentity=false){
-  const [rooms,me]=await Promise.all([api('/api/conversations'),includeIdentity?api('/api/me'):Promise.resolve(null)]);if(!state.user)return;
-  state.rooms=rooms.conversations;if(me){state.user=me.user;state.csrf=me.csrf;profile();}
+  const [rooms,me,directory]=await Promise.all([api('/api/conversations'),includeIdentity?api('/api/me'):Promise.resolve(null),includeIdentity?api('/api/directory'):Promise.resolve(null)]);if(!state.user)return;
+  state.rooms=rooms.conversations;if(directory)state.directory=directory.departments;if(me){state.user=me.user;state.csrf=me.csrf;profile();}
   if(state.active&&!state.rooms.some(r=>r.id===state.active)){state.active=null;state.messages=[];$('#message-feed').replaceChildren();const general=state.rooms.find(r=>r.scope==='general');if(general)await openRoom(general.id);}
   renderRooms();renderHeader();
 }
 function renderRooms(){
-  const q=fold($('#chat-filter').value),visible=state.rooms.filter(r=>fold(r.title).includes(q));$('#room-count').textContent=state.rooms.length;
-  $('#conversation-list').innerHTML=visible.length?visible.map(r=>`${r.scope==='department'?'<p class="room-section-label">MÜDÜRLÜĞÜM</p>':''}<button class="room-nav ${r.id===state.active?'active':''}" data-chat="${r.id}" ${r.id===state.active?'aria-current="true"':''} aria-label="${esc(r.title)}${r.unread?`, ${r.unread} okunmamış`:''}"><span class="room-nav-icon">${icon(r.scope==='general'?'globe':'building')}</span><span class="room-nav-copy"><strong>${esc(r.title)}</strong><small>${r.scope==='general'?'Tüm kurum personeli':'Müdürlük içi iletişim'}</small></span>${r.unread?`<span class="unread-badge">${r.unread>99?'99+':r.unread}</span>`:''}</button>`).join(''):'<p class="muted small">Alan bulunamadı.</p>';
+  const q=fold($('#chat-filter').value),visible=state.rooms.filter(r=>fold(r.title).includes(q));
+  const other=state.directory.filter(d=>!d.accessible&&fold(d.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+  $('#room-count').textContent=state.directory.length+1;
+  let html=visible.map(r=>`${r.scope==='department'?'<p class="room-section-label">MÜDÜRLÜĞÜM</p>':''}<button class="room-nav ${r.id===state.active?'active':''}" data-chat="${r.id}" ${r.id===state.active?'aria-current="true"':''} aria-label="${esc(r.title)}${r.unread?`, ${r.unread} okunmamış`:''}"><span class="room-nav-icon">${icon(r.scope==='general'?'globe':'building')}</span><span class="room-nav-copy"><strong>${esc(r.title)}</strong><small>${r.scope==='general'?'Tüm kurum personeli':'Müdürlük içi iletişim'}</small></span>${r.unread?`<span class="unread-badge">${r.unread>99?'99+':r.unread}</span>`:''}</button>`).join('');
+  if(other.length)html+='<p class="room-section-label directory-heading">DİĞER MÜDÜRLÜKLER <span>'+other.length+'</span></p>'+other.map(d=>`<button class="room-nav locked-room" data-department-info="${d.id}" title="${esc(d.name)} · Müdürlük personeline özel" aria-label="${esc(d.name)}; müdürlük personeline özel"><span class="room-nav-icon">${icon('building')}</span><span class="room-nav-copy"><strong>${esc(d.name)}</strong><small>Müdürlük personeline özel</small></span><span class="room-lock" aria-hidden="true">${icon('lock')}</span></button>`).join('');
+  $('#conversation-list').innerHTML=html||'<p class="muted small">Alan bulunamadı.</p>';
 }
 function renderHeader(){
   const r=state.rooms.find(r=>r.id===state.active);if(!r)return;const general=r.scope==='general';
@@ -126,13 +130,14 @@ async function adminPanel(){
   }catch(error){$('#admin-error').textContent=error.message;}
 }
 $('#admin-open').addEventListener('click',()=>{$('#admin-error').textContent='';dialog('#admin-dialog');adminPanel();});
-$('#department-form').addEventListener('submit',async e=>{e.preventDefault();$('#admin-error').textContent='';const b=e.target.querySelector('[type=submit]');b.disabled=true;try{await api('/api/admin/departments',{name:$('#department-name').value});e.target.reset();await adminPanel();toast('Müdürlük ve odası hazır.');}catch(error){$('#admin-error').textContent=error.message;}finally{b.disabled=false;}});
+$('#department-form').addEventListener('submit',async e=>{e.preventDefault();$('#admin-error').textContent='';const b=e.target.querySelector('[type=submit]');b.disabled=true;try{await api('/api/admin/departments',{name:$('#department-name').value});e.target.reset();await adminPanel();await refresh(true);toast('Müdürlük ve odası hazır.');}catch(error){$('#admin-error').textContent=error.message;}finally{b.disabled=false;}});
 function showCredential(username,password){dialog('#credential-dialog');$('#credential-user').textContent='Kullanıcı adı: '+username;$('#credential-value').textContent=password;}
 $('#user-form').addEventListener('submit',async e=>{e.preventDefault();$('#admin-error').textContent='';const b=e.target.querySelector('[type=submit]');b.disabled=true;try{const input=Object.fromEntries(new FormData(e.target));const result=await api('/api/admin/users',input);e.target.reset();await refresh(true);showCredential(result.user.username,result.temporaryPassword);}catch(error){$('#admin-error').textContent=error.message;}finally{b.disabled=false;}});
 document.addEventListener('click',async e=>{
   try{
     if(e.target.closest('[data-close]'))closeDialogs();
     const room=e.target.closest('[data-chat]');if(room)await openRoom(Number(room.dataset.chat));
+    const locked=e.target.closest('[data-department-info]');if(locked){const dept=state.directory.find(d=>d.id===Number(locked.dataset.departmentInfo));if(dept){$('#detail-title').textContent=dept.name;$('#detail-content').innerHTML='<p class="muted">Bu müdürlüğün odası yalnızca o müdürlüğe atanmış personel tarafından kullanılabilir.</p><p class="muted small">Tüm müdürlüklerle ortak paylaşım için Genel Alan’ı kullanabilirsiniz. Müdürlük atamanızı kurum yöneticiniz düzenler.</p>';dialog('#detail-dialog');}}
     if(e.target.closest('#load-older'))await older();
     const result=e.target.closest('[data-result]');if(result){closeDialogs();await openRoom(Number(result.dataset.room),Number(result.dataset.result));}
     const reply=e.target.closest('[data-reply]'),edit=e.target.closest('[data-edit]');

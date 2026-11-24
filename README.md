@@ -4,6 +4,14 @@ ULAK, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından o
 
 Kaynak depo: https://github.com/theorkun/ulak
 
+## Sarıçam Belediyesi müdürlük dizini
+
+Sol menüde belediyenin [resmî müdürlükler sayfasından](https://www.saricam.bel.tr/mudurlukler) 24 Kasım 2026 tarihinde kontrol edilen **29 müdürlük** yer alır. Kayıtlar `department-catalog.cjs` içinde kaynak adresi ve kontrol tarihiyle saklanır; uygulamanın çalışması için belediye sitesine veya internete bağlantı gerekmez. Sayfada kısaltılmış “Destek Hiz.” adı açık yazımıyla kullanılmıştır.
+
+Menüde Genel Alan, kullanıcının kendi müdürlüğü ve diğer müdürlükler ayrı bölümlerde gösterilir. Diğer müdürlüklerin yalnızca adları listelenir; kilit simgeli satıra tıklamak erişim açıklamasını gösterir. Paylaşımları veya personel bilgileri açılmaz. Müdürlük araması bütün dizini filtreler. Yetkiler değişmez: personel yalnızca kendi odasına ve Genel Alan'a erişebilir.
+
+Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yönetici listeden müdürlüğü seçebilir. Önceki “İnsan Kaynakları Müdürlüğü” gibi bilinen kısa adlar, resmî ad henüz ayrı bir kayıt olarak yoksa oda geçmişi ve personel atamaları korunarak resmî ada güncellenir. Kurumun ayrıca tanımladığı özel birimler silinmez.
+
 ## İletişim modeli
 
 - **Genel Alan:** Tüm müdürlüklerin aktif personeli otomatik katılır; herkes paylaşım yapabilir.
@@ -27,7 +35,7 @@ Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırı
 | `demo.destek` | Destek Hizmetleri Müdürlüğü | Personel |
 | `demo.mali` | Mali Hizmetler Müdürlüğü | Personel |
 
-Her hesap Genel Alan ve kendi müdürlük odası olmak üzere iki oda görür. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
+Her hesap Genel Alan ve kendi müdürlük odasını kullanabilir. Diğer müdürlüklerin adları sol menüde kilitli olarak listelenir. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
 
 ## Gerçek kurum kurulumu
 

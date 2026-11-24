@@ -12,7 +12,7 @@ test('old schema migrates without deleting private history or exposing it as a r
   INSERT INTO messages(conversation_id,sender_id,body,client_id) VALUES(10,1,'Genel geçmiş','old-general'),(11,1,'Özel geçmiş','old-private'),(12,1,'Eski grup geçmişi','old-group');`);db.close();
   let app;
   try{
-    app=createChat({dbPath});assert.equal(app.db.prepare("SELECT title FROM conversations WHERE scope='general'").get().title,'Genel Alan');assert.equal(app.db.prepare("SELECT count(*) n FROM conversations WHERE scope='department'").get().n,2);
+    app=createChat({dbPath});assert.equal(app.db.prepare("SELECT title FROM conversations WHERE scope='general'").get().title,'Genel Alan');assert.ok(app.db.prepare("SELECT count(*) n FROM conversations WHERE scope='department'").get().n>=29);
     assert.equal(app.db.prepare('SELECT scope FROM conversations WHERE id=11').get().scope,'legacy');assert.equal(app.db.prepare('SELECT scope FROM conversations WHERE id=12').get().scope,'legacy');assert.equal(app.db.prepare('SELECT count(*) n FROM messages').get().n,3);assert.equal(app.db.prepare('SELECT last_read FROM members WHERE conversation_id=10 AND user_id=1').get().last_read,7);
     const count=app.db.prepare('SELECT count(*) n FROM conversations').get().n;await app.close();app=createChat({dbPath});assert.equal(app.db.prepare('SELECT count(*) n FROM conversations').get().n,count);assert.equal(app.db.prepare('SELECT count(*) n FROM messages').get().n,3);
   }finally{if(app)await app.close();assert.equal(path.dirname(dir),os.tmpdir());assert.ok(path.basename(dir).startsWith('ulak-migration-'));fs.rmSync(dir,{recursive:true,force:true});}

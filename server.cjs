@@ -171,8 +171,12 @@ function createChat(options = {}) {
         const users = db.prepare('SELECT id,username,name,department,role,active FROM users WHERE active=1 AND (department_id=? OR id=?) ORDER BY name').all(user.department_id,user.id);
         return json(res, 200, { users: users.map(u => ({ ...u, online: online(u.id) })) });
       }
+      if (route === '/api/directory' && req.method === 'GET') {
+        const departments=db.prepare('SELECT id,name,official FROM departments ORDER BY name').all().map(d=>({id:d.id,name:d.name,official:!!d.official,accessible:d.id===user.department_id}));
+        return json(res,200,{departments});
+      }
       if (route === '/api/admin/departments' && req.method === 'GET') { admin(user); return json(res,200,{ departments: db.prepare('SELECT d.id,d.name,(SELECT count(*) FROM users u WHERE u.department_id=d.id AND u.active=1) people FROM departments d ORDER BY d.name').all() }); }
-      if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); return json(res,201,{department:dept}); }
+      if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); event({kind:'directory'}); return json(res,201,{department:dept}); }
       if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT id,username,name,department,department_id,role,active,must_change FROM users ORDER BY active DESC,name').all().map(publicUser) }); }
       if (route === '/api/admin/users' && req.method === 'POST') {
         admin(user); const input = await body(req);

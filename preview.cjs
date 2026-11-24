@@ -9,11 +9,11 @@ async function startPreview(options={}){
   const password=salt+':'+(await promisify(crypto.scrypt)('UlakDemo2026!',salt,64)).toString('hex');
   const people=[
     ['demo.yonetici','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
-    ['demo.insan','Elif Demir','İnsan Kaynakları Müdürlüğü','member'],
+    ['demo.insan','Elif Demir','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.destek','Mert Kaya','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.mali','Zeynep Arslan','Mali Hizmetler Müdürlüğü','member'],
     ['demo.bilgi','Selin Aydın','Bilgi İşlem Müdürlüğü','member'],
-    ['demo.personel','Esra Koç','İnsan Kaynakları Müdürlüğü','member'],
+    ['demo.personel','Esra Koç','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.teknik','Can Aksoy','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
   ];
@@ -30,8 +30,8 @@ async function startPreview(options={}){
   post(general,2,'Yarın saat 10.30’da yapılacak kurum içi bilgilendirme toplantısı için hazırlıklarımız tamamlandı. Tüm müdürlüklerin temsilcilerini bekliyoruz.',8);
   post(room('Bilgi İşlem Müdürlüğü'),5,'Sunucu bakım kontrollerini tamamladım. Destek taleplerini müdürlük alanımızda koordine edebiliriz.',30);
   post(room('Bilgi İşlem Müdürlüğü'),1,'Teşekkürler Selin. Bugünkü test sonuçlarını burada paylaşalım; sonrasında kurum genelindeki bilgilendirmeyi Genel Alan’dan yaparız.',12);
-  post(room('İnsan Kaynakları Müdürlüğü'),6,'Yeni başlayan personelin oryantasyon dosyaları hazır. Birim içi kontrol listesini tamamlıyorum.',25);
-  post(room('İnsan Kaynakları Müdürlüğü'),2,'Teşekkürler Esra. Personel listeleri son halini alınca birlikte gözden geçirelim.',11);
+  post(room('İnsan Kaynakları ve Eğitim Müdürlüğü'),6,'Yeni başlayan personelin oryantasyon dosyaları hazır. Birim içi kontrol listesini tamamlıyorum.',25);
+  post(room('İnsan Kaynakları ve Eğitim Müdürlüğü'),2,'Teşekkürler Esra. Personel listeleri son halini alınca birlikte gözden geçirelim.',11);
   post(room('Destek Hizmetleri Müdürlüğü'),7,'Toplantı salonu ve ortak alan hazırlıklarını bitirdik. Öğleden sonra son kontrolü yapacağım.',27);
   post(room('Mali Hizmetler Müdürlüğü'),4,'Müdürlük içi bütçe değerlendirmesinin gündemini bu alanda toparlayalım.',23);
   const port=options.port??Number(process.env.PREVIEW_PORT||8096);
