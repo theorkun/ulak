@@ -41,8 +41,8 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
   window.ULAK_DEMO={async request(route,input={},method){
     const verb=method||(input&&Object.keys(input).length?'POST':'GET');
     const url=new URL(route,'https://demo.invalid'),path=url.pathname;input=input||{};
-    if(path==='/api/status')return{setupRequired:false,preview:true,browserDemo:true,recoveryChannels:{email:false,sms:false}};
-    if(path.startsWith('/api/recovery/'))fail(503,'E-posta ve SMS gönderimi bu önizlemede etkin değildir.');
+    if(path==='/api/status')return{setupRequired:false,preview:true,browserDemo:true,recoveryChannels:{email:false}};
+    if(path.startsWith('/api/recovery/'))fail(503,'E-posta gönderimi bu önizlemede etkin değildir.');
     if(path==='/api/login'&&verb==='POST'){
       const user=people.find(p=>p.active&&p.username===String(input.username).trim().toLowerCase()&&p.password===input.password);
       if(!user)fail(401,'Kullanıcı adı veya parola hatalı.');current=user;return me();

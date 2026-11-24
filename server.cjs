@@ -324,6 +324,7 @@ function createChat(options = {}) {
   return { server, db, setupToken, setupRequired: () => !countUsers(), close };
 }
 if (require.main === module) {
+  const mailEnv=path.join(__dirname,'smtp.env');if(fs.existsSync(mailEnv))process.loadEnvFile(mailEnv);
   const tls = process.env.TLS_KEY_FILE && process.env.TLS_CERT_FILE ? { key: fs.readFileSync(process.env.TLS_KEY_FILE), cert: fs.readFileSync(process.env.TLS_CERT_FILE) } : null;
   const app = createChat({ tls });
   const port = Number(process.env.PORT || 8095), host = process.env.HOST || '127.0.0.1';

@@ -51,16 +51,26 @@ Her hesap Genel Alan ve kendi müdürlük odasını kullanabilir. Diğer müdür
 
 ### Şifremi unuttum ve iletişim kayıtları
 
-Giriş ekranındaki **Şifremi unuttum** bağlantısı e-posta veya SMS yöntemini sunar. Kullanıcı yalnızca kullanıcı adını girer; kod, kullanıcının o anda yazdığı bir adrese değil, yöneticinin kurum kayıtlarından doğrulayarak kaydettiği e-posta/telefon bilgisine gönderilir. Yönetimde yeni personel formundaki alanlar veya mevcut personelin **İletişim** düğmesi kullanılır. Telefon ve e-posta grup üyelerine gösterilmez.
+Giriş ekranındaki **Şifremi unuttum** bağlantısı yalnızca e-posta ile yenileme sunar. SMS kaldırılmıştır ve sunucu SMS talebini reddeder. Kullanıcı yalnızca kullanıcı adını girer; kod, yöneticinin kurum kayıtlarından doğrulayarak kaydettiği e-posta adresine gönderilir. Yönetimde yeni personel formu veya mevcut personelin **İletişim** düğmesi kullanılır. E-posta grup üyelerine gösterilmez. Önceki telefon kayıtları silinmez ancak parola yenilemede kullanılmaz.
 
-Gönderim hizmeti bağlantıları henüz sağlanmadığından yöntemler başlangıçta pasiftir. GitHub Pages demosu gerçek SMS/e-posta göndermez ve gerçek hesap kurtarmaz. Kurum hizmetinin API bilgileri geldiğinde aşağıdaki sunucu entegrasyonu sağlayıcının protokolüne uyarlanmalıdır; doğrudan SMTP hesabı bağlamak ayrıca SMTP adaptörü gerektirir.
+**Webmail:** https://webmail.saricam.bel.tr. Bu, kullanıcı tarafından verilen webmail giriş adresidir; SMTP sunucusu/portu henüz doğrulanmamıştır. Gerçek kurum sunucusu henüz kurulmadığından ve SMTP hesabı bağlanmadığından gönderim başlangıçta pasiftir. GitHub Pages yalnızca arayüz önizlemesidir; gerçek e-posta göndermez veya kurum hesabı kurtarmaz.
+
+SMTP bağlantısı hazırdır. Kurum sunucusunda:
+
+1. `pnpm install --frozen-lockfile` ile sabitlenmiş Nodemailer bağımlılığını kurun. Normal Node.js kurulumunda alternatif olarak `npm install` kullanılabilir.
+2. `smtp.env.example` dosyasını `smtp.env` adıyla kopyalayın. Bu dosya Git tarafından yok sayılır; Pages paketine kopyalanmaz.
+3. BT biriminin verdiği `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` ve `SMTP_FROM` değerlerini girin. Webmail adresini otomatik olarak SMTP adresi saymayın. Özel karakterli parolaları çift tırnak içinde yazın.
+4. `SMTP_ENABLED=1` yapın. `node scripts/check-mail.cjs` ile bağlantı ve hesap doğrulamasını kontrol edin; bu komut e-posta göndermez.
+5. Sunucuyu başlatın/yeniden başlatın. `server.cjs`, `smtp.env` dosyasını başlangıçta yükler. Kullanıcıların kayıtlı e-posta adreslerini yönetimden doğrulayın. Hizmet doğrulamasından sonra kontrollü bir gerçek hesapla yenileme testi yapın.
+
+Port 587 ve diğer STARTTLS portlarında TLS yükseltmesi zorunludur; 465 doğrudan TLS kullanır. Sertifika kontrolü kapatılmaz. SMTP parolası ve doğrulama kodu istemci koduna veya uygulama günlüklerine yazılmaz. `smtp.env` dosyasını yalnızca sunucudaki yetkili hesaba okunabilir tutun. Uygulama erişimi için kurum HTTPS ayarları ayrıca yapılandırılmalıdır. SMTP ayarlarının varlığı tek başına teslimat başarısı garantisi değildir; taşıyıcı hataları kurtarma kaydını iptal eder.
 
 Sunucu, isteğe bağlı HTTPS teslim ağ geçidi sözleşmesini destekler:
 
 - `RESET_DELIVERY_URL`: kurumun doğruladığı HTTPS ağ geçidi adresi.
 - `RESET_DELIVERY_TOKEN`: yalnızca sunucu ortamında tutulan erişim anahtarı; GitHub'a veya `docs/` içine konmaz.
-- `RESET_CHANNELS`: bağlanan yöntemler (`email`, `sms` veya `email,sms`).
-- İstek: `POST`, `Authorization: Bearer …`; JSON: `{ "purpose":"ulak-password-reset", "channel":"email veya sms", "to":"kayıtlı adres veya numara", "code":"6 haneli kod", "expiresAt":"ISO tarih" }`. Ağ geçidi kabul ettiğinde 2xx döndürmelidir; yönlendirmeler izlenmez, 8 saniye zaman aşımı vardır.
+- `RESET_CHANNELS`: `email`.
+- İstek: `POST`, `Authorization: Bearer …`; JSON: `{ "purpose":"ulak-password-reset", "channel":"email", "to":"kayıtlı e-posta", "code":"6 haneli kod", "expiresAt":"ISO tarih" }`. Ağ geçidi kabul ettiğinde 2xx döndürmelidir; yönlendirmeler izlenmez, 8 saniye zaman aşımı vardır. SMTP etkinleştirildiğinde öncelikli kullanılır.
 - Servis sağlayıcı sözleşmesi farklıysa `createChat({recoveryDelivery, recoveryChannels})` ile sunucu adaptörü eklenebilir. Sağlayıcıya erişmek için kurum sunucusunda gerekli dış bağlantı izni bulunmalıdır.
 
 Kod 10 dakika geçerli ve tek kullanımlıktır; veritabanında kodun özeti tutulur. Beş başarısız denemede işlem kapanır. IP/kullanıcı bazında talep sınırları uygulanır. Bilinmeyen kullanıcılar da aynı genel yanıtı alır. Başarılı yenileme bütün oturumları kapatır; yeni kod, iletişim bilgisi değişikliği, hesap kapatma ve başka parola değişiklikleri eski kodları iptal eder. Kod veya hizmet anahtarı istemci yanıtına/işlem kaydına yazılmaz. Gönderim hatası içerik taşımayan `recovery_delivery_failed` işlem kaydı oluşturur. Servis aktif olduğunda HTTPS ve güvenli çerez ayarları kullanılmalıdır.
@@ -71,7 +81,7 @@ KVKK aydınlatma, kullanım koşulları ve çerez metinleri giriş yapmadan aç�
 
 ### Kurulum adımları
 
-1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. Ek npm paketi veya internet bağlantısı gerekmez. Başlatma dosyaları bu bilgisayardaki Codex Node çalışma ortamını da bulabilir; başka bilgisayara taşırken Node.js kurun.
+1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. SMTP kullanılacaksa yukarıdaki bağımlılık kurulumunu yapın; SMTP kapalıyken temel yerel mesajlaşma ek paket gerektirmez. Başlatma dosyaları bu bilgisayardaki Codex Node çalışma ortamını da bulabilir; başka bilgisayara taşırken Node.js kurun.
 2. `BASLAT-YEREL.cmd` çalıştırın veya `node server.cjs` kullanın.
 3. Konsoldaki ilk kurulum bağlantısını **aynı bilgisayarda** açın. Yönetici adını, müdürlüğünü, kullanıcı adını ve en az 10 karakterli kendi parolasını belirleyin.
 4. Yönetim merkezinde müdürlükleri tanımlayın. Personel hesabı açarken ilgili müdürlüğü seçin. Yeni hesap Genel Alan ve kendi müdürlük odasına otomatik katılır.

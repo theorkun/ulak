@@ -3,6 +3,17 @@
   "version": "2.0.0",
   "private": true,
   "description": "Yerel ağ için müdürlük odaları ve tüm personelin erişebildiği Genel Alan",
-  "engines": { "node": ">=24.0.0" },
-  "scripts": { "start": "node server.cjs", "preview": "node preview.cjs", "build:pages": "node scripts/build-pages.cjs", "test": "node --test tests/*.test.cjs" }
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.cjs",
+    "preview": "node preview.cjs",
+    "build:pages": "node scripts/build-pages.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "check:mail": "node scripts/check-mail.cjs"
+  },
+  "dependencies": {
+    "nodemailer": "10.6.1"
+  }
 }

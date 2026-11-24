@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#087f8c">
   <title>ULAK · Kurum İletişim Alanı</title>
   <link rel="icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=8">
-  <script src="app.js?v=8" defer></script>
-  <script src="auth.js?v=8" defer></script>
+  <link rel="stylesheet" href="style.css?v=9">
+  <script src="app.js?v=9" defer></script>
+  <script src="auth.js?v=9" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -79,7 +79,7 @@
   </dialog>
   <dialog id="admin-dialog" class="wide-dialog" aria-labelledby="admin-title">
     <div class="dialog-head"><h2 id="admin-title">Yönetim</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
-    <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>E-posta<input name="email" type="email" maxlength="254" autocomplete="off"></label><label>Cep telefonu<input name="phone" type="tel" maxlength="25" autocomplete="off" placeholder="+905321234567"></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>
+    <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>E-posta<input name="email" type="email" maxlength="254" autocomplete="off"></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>
     <details class="admin-section" id="departments-section"><summary>Müdürlükleri yönet</summary><form id="department-form" class="inline-form"><label class="sr-only" for="department-name">Müdürlük adı</label><input id="department-name" name="name" required minlength="2" maxlength="80" placeholder="Yeni müdürlük adı"><button class="button primary" type="submit">Ekle</button></form><div id="department-list" class="department-list"></div></details>
     <p id="admin-error" class="form-error" role="alert"></p>
     <label class="admin-search-label" for="admin-user-filter">Personel ara<input id="admin-user-filter" type="search" placeholder="Ad, kullanıcı adı veya müdürlük…"></label>
@@ -90,10 +90,9 @@
   <dialog id="credential-dialog" aria-labelledby="credential-title"><div class="dialog-head"><h2 id="credential-title">Geçici parola</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div><p class="muted">Bu parolayı ilgili personele güvenli bir şekilde iletin. Ekran kapanınca tekrar gösterilmez.</p><p id="credential-user"></p><code id="credential-value" class="credential-value"></code><button class="button primary" data-close>Tamam</button></dialog>
   <dialog id="recovery-dialog" aria-labelledby="recovery-title">
     <div class="dialog-head"><h2 id="recovery-title">Şifremi unuttum</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
-    <p class="muted small">Kurum kayıtlarınızdaki e-posta adresinize veya cep telefonunuza doğrulama kodu isteyin.</p>
+    <p class="muted small">Kullanıcı adınızı girin. Parolanızı yenilemeniz için kurum kayıtlarınızdaki e-posta adresinize doğrulama kodu gönderilir.</p>
     <form id="recovery-request-form">
       <label>Kullanıcı adı<input id="recovery-username" required minlength="3" maxlength="40" autocomplete="username" placeholder="ad.soyad"></label>
-      <fieldset class="recovery-methods"><legend>Doğrulama yöntemi</legend><label><input type="radio" name="recovery-channel" value="email" checked><span>E-posta<small>Kayıtlı e-posta adresim</small></span></label><label><input type="radio" name="recovery-channel" value="sms"><span>SMS<small>Kayıtlı cep telefonum</small></span></label></fieldset>
       <p id="recovery-availability" class="notice small" role="status"></p>
       <button class="button primary full" id="request-recovery-code" type="submit">Doğrulama kodu gönder</button>
     </form>
@@ -103,7 +102,7 @@
       <label>Yeni parola<input id="recovery-password" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label>
       <label>Yeni parola tekrar<input id="recovery-repeat" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label>
       <p class="small muted">En az 10 karakter kullanın. Yenileme sonrası mevcut oturumlarınız kapatılır.</p>
-      <button class="button primary full" type="submit">Parolayı yenile</button><button class="text-button full" id="recovery-back" type="button">Yeni kod iste / yöntemi değiştir</button>
+      <button class="button primary full" type="submit">Parolayı yenile</button><button class="text-button full" id="recovery-back" type="button">Yeni kod iste</button>
     </form>
     <p id="recovery-error" class="form-error" role="alert"></p><p id="recovery-success" class="success-message" role="status" hidden></p>
     <p class="small muted">İletişim bilginiz değiştiyse Bilgi İşlem Müdürlüğüne başvurun. <button class="text-button" type="button" data-legal="privacy">Kişisel veriler hakkında</button></p>
@@ -113,9 +112,9 @@
     <article data-legal-content="privacy" hidden>
       <p class="notice small">İnceleme taslağı · 24 Kasım 2026. Bu metin belediyenin onaylanmış aydınlatma metni değildir. Hukuki sebepler, hizmet sağlayıcılar, saklama süreleri ve başvuru kanalı kurum tarafından kesinleştirilmelidir.</p>
       <h3>Veri sorumlusu ve kapsam</h3><p>ULAK kurum içi iletişim sisteminin veri sorumlusu Sarıçam Belediyesidir. Bu taslak; personel hesabı, müdürlük grupları, oturum güvenliği ve parola yenileme süreçleri hakkında bilgilendirme amacıyla hazırlanmıştır.</p>
-      <h3>İşlenen veriler ve amaçlar</h3><ul><li>Ad soyad, kullanıcı adı, müdürlük ve görev yetkisi: hesap oluşturma, personeli ilgili gruplara atama ve erişim kontrolü.</li><li>Grup mesajları, yanıtlar ve işlem tarihleri: kurum içi iletişim ve koordinasyon.</li><li>Parola özeti, oturum kayıtları ve yönetim işlem kayıtları: kimlik doğrulama ve bilgi güvenliği. Parola açık metin olarak saklanmaz.</li><li>Yönetici tarafından kaydedilen e-posta ve telefon: talep üzerine tek kullanımlık parola yenileme kodunun iletilmesi. Bu bilgiler grup katılımcılarına gösterilmez.</li><li>Bağlantı adresi ve başarısız deneme sayaçları: kötüye kullanımın sınırlandırılması. Uygulamanın bu sayaçları geçici bellekte tutulur; kurum ağ altyapısı ayrıca erişim kaydı oluşturabilir.</li></ul>
+      <h3>İşlenen veriler ve amaçlar</h3><ul><li>Ad soyad, kullanıcı adı, müdürlük ve görev yetkisi: hesap oluşturma, personeli ilgili gruplara atama ve erişim kontrolü.</li><li>Grup mesajları, yanıtlar ve işlem tarihleri: kurum içi iletişim ve koordinasyon.</li><li>Parola özeti, oturum kayıtları ve yönetim işlem kayıtları: kimlik doğrulama ve bilgi güvenliği. Parola açık metin olarak saklanmaz.</li><li>Yönetici tarafından kaydedilen e-posta: talep üzerine tek kullanımlık parola yenileme kodunun iletilmesi. Bu bilgiler grup katılımcılarına gösterilmez.</li><li>Bağlantı adresi ve başarısız deneme sayaçları: kötüye kullanımın sınırlandırılması. Uygulamanın bu sayaçları geçici bellekte tutulur; kurum ağ altyapısı ayrıca erişim kaydı oluşturabilir.</li></ul>
       <h3>Toplama yöntemi ve hukuki sebep</h3><p>Veriler yetkili yöneticilerin personel kaydı oluşturması, kullanıcıların mesaj ve formları doldurması ve sistemin oturum işlemleri yoluyla elektronik ortamda elde edilir. Her amaç için uygulanacak 6698 sayılı Kanun'un 5. maddesindeki işleme şartı; kurumun hukuki yükümlülükleri ve istihdam ilişkisi değerlendirilerek belediyece belirlenmelidir. Bu bilgilendirme açık rıza talebi değildir.</p>
-      <h3>Erişim ve aktarım</h3><p>Genel Alan mesajları tüm aktif personele, müdürlük mesajları ilgili müdürlük personeline açılır. Yetkili teknik personel sistem işletimi ve güvenliği kapsamında erişebilir. Yasal zorunluluk hâlinde yetkili kamu kurumlarına aktarım yapılabilir. E-posta/SMS entegrasyonu etkinleştirildiğinde seçili iletişim bilgisi ve doğrulama mesajı ilgili hizmet sağlayıcıya iletilir. Sağlayıcının kimliği, veri işleme koşulları ve varsa yurt dışı aktarım mekanizması devreye almadan önce bu metinde açıklanmalıdır.</p>
+      <h3>Erişim ve aktarım</h3><p>Genel Alan mesajları tüm aktif personele, müdürlük mesajları ilgili müdürlük personeline açılır. Yetkili teknik personel sistem işletimi ve güvenliği kapsamında erişebilir. Yasal zorunluluk hâlinde yetkili kamu kurumlarına aktarım yapılabilir. E-posta entegrasyonu etkinleştirildiğinde seçili iletişim bilgisi ve doğrulama mesajı ilgili hizmet sağlayıcıya iletilir. Sağlayıcının kimliği, veri işleme koşulları ve varsa yurt dışı aktarım mekanizması devreye almadan önce bu metinde açıklanmalıdır.</p>
       <h3>Saklama ve silme</h3><p>Doğrulama kodu 10 dakika geçerlidir, en fazla 5 kez denenebilir ve başarılı kullanımda iptal edilir. Süresi geçmiş yenileme kayıtları sonraki kod talebinde temizlenir. Personel, mesaj, işlem ve yedek kayıtları için saklama ve imha takvimi belediyece belirlenmelidir; bu sürümde bu kayıtlar için otomatik süreli imha uygulanmaz.</p>
       <h3>Haklarınız ve başvuru</h3><p>Kanun'un 11. maddesi kapsamında verilerinizin işlenip işlenmediğini ve amacına uygun kullanımını öğrenme, aktarıldığı tarafları bilme, düzeltme veya şartları oluştuğunda silme/yok etme ve bu işlemlerin alıcılara bildirilmesini isteme, otomatik analiz sonucu aleyhinize sonuçlara itiraz etme ve hukuka aykırı işleme nedeniyle zararın giderilmesini isteme haklarınız bulunur. Başvurular için belediyenin resmî iletişim kanallarına başvurabilirsiniz; ULAK'a özgü yetkili başvuru kanalı kurumca teyit edilmelidir.</p>
       <p><a href="https://www.saricam.bel.tr/iletisim" target="_blank" rel="noopener noreferrer">Belediyenin resmî iletişim sayfası</a> · <a href="https://www.kvkk.gov.tr/Icerik/2033/Aydinlatma-Yukumlulugu-" target="_blank" rel="noopener noreferrer">KVKK aydınlatma yükümlülüğü</a></p>
