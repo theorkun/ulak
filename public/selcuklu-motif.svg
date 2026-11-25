@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" fill="none">
+  <title>Selçuklu geometrisinden esinlenen sekiz köşeli yıldız ve geçme deseni</title>
+  <g stroke="#008c95" stroke-width="1" stroke-linejoin="round">
+    <path d="M90 0v34m56 56h34M90 146v34M0 90h34M0 0l50.4 50.4M180 0l-50.4 50.4M180 180l-50.4-50.4M0 180l50.4-50.4"/>
+    <path d="M90 34l16.4 16.4h23.2v23.2L146 90l-16.4 16.4v23.2h-23.2L90 146l-16.4-16.4H50.4v-23.2L34 90l16.4-16.4V50.4h23.2Z"/>
+    <path d="M90 50l11.7 11.7h16.6v16.6L130 90l-11.7 11.7v16.6h-16.6L90 130l-11.7-11.7H61.7v-16.6L50 90l11.7-11.7V61.7h16.6Z" opacity=".5"/>
+  </g>
+  <g stroke="#c6a04b" stroke-width="1.1" stroke-linejoin="round">
+    <path d="m90 69 21 21-21 21-21-21Z"/>
+    <path d="M0 16 16 0m148 0 16 16m0 148-16 16M16 180 0 164"/>
+    <path d="M0 58 32 90 0 122m58 58 32-32 32 32m58-58-32-32 32-32M58 0l32 32 32-32"/>
+  </g>
+</svg>

@@ -8,6 +8,8 @@ Arayüzde Selçuklu turkuazı (`#008C95`), koyu lacivert (`#132A45`) ve altın s
 
 ## GitHub üzerinden tarayıcı demosu
 
+Giriş arka planında Selçuklu geometrisinden esinlenen sekiz köşeli yıldız ve geçme çizgilerinden oluşan düşük yoğunluklu bir SVG deseni kullanılır. `public/selcuklu-motif.svg` yerel olarak paketlenir; internet bağlantısı gerektirmez. Desen dekoratiftir, formun arkasında kalır ve fare/klavye etkileşimini engellemez. Belediye logosuna uygulanmaz.
+
 **[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme süper admini: `orkun` · Parola: `admin`
 
 Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Genel Alan, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
