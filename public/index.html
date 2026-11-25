@@ -6,18 +6,26 @@
   <meta name="theme-color" content="#132a45">
   <title>ULAK · Kurum İletişim Alanı</title>
   <link rel="icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=11">
-  <script src="app.js?v=11" defer></script>
-  <script src="auth.js?v=11" defer></script>
+  <link rel="stylesheet" href="style.css?v=12">
+  <script src="app.js?v=12" defer></script>
+  <script src="auth.js?v=12" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
-    <div class="auth-card">
-      <div class="auth-branding">
-        <img class="municipal-logo" src="saricam-belediyesi-logo.png" width="88" height="115" alt="Sarıçam Belediyesi logosu">
-        <div class="auth-identity"><a class="brand" href="/">ULAK</a><p>Sarıçam Belediyesi</p><span>Kurum içi iletişim</span></div>
-      </div>
-      <h1 id="auth-title">Giriş yap</h1>
+    <div class="auth-layout">
+      <div class="auth-shell">
+        <aside class="auth-intro" aria-label="ULAK kurum içi iletişim">
+          <div class="auth-branding">
+            <img class="municipal-logo" src="saricam-belediyesi-logo.png" width="88" height="115" alt="Sarıçam Belediyesi logosu">
+            <div class="auth-identity"><a class="brand" href="/">ULAK</a><p>Sarıçam Belediyesi</p><span>Kurum içi iletişim</span></div>
+          </div>
+          <div class="auth-intro-copy"><span class="auth-eyebrow">ORTAK ÇALIŞMA ALANIMIZ</span><h2>Aynı kurum.<br><span>Ortak iletişim.</span></h2><p>Genel Alan ve müdürlük odalarıyla çalışma arkadaşlarınızla bağlantıda kalın.</p></div>
+          <div class="auth-intro-footer"><span class="auth-intro-mark" aria-hidden="true"></span><span>Genel Alan <span aria-hidden="true">·</span> Müdürlük odaları</span></div>
+          <div class="auth-ornament" aria-hidden="true"><span></span><span></span><span></span></div>
+        </aside>
+        <div class="auth-card">
+      <span class="auth-form-kicker">PERSONEL GİRİŞİ</span>
+      <h1 id="auth-title">Hoş geldiniz</h1>
       <p id="auth-description" class="muted">Kurum hesabınızla devam edin.</p>
       <form id="auth-form">
         <div id="setup-fields" hidden>
@@ -25,14 +33,16 @@
           <label>Ad soyad<input id="setup-name" maxlength="80" autocomplete="name"></label>
           <label>Müdürlük<input id="setup-department" maxlength="80" value="Yönetim"></label>
         </div>
-        <label>Kullanıcı adı<input id="login-username" required maxlength="40" autocomplete="username" placeholder="ad.soyad"></label>
-        <label>Parola<input id="login-password" type="password" required maxlength="128" autocomplete="current-password" placeholder="Parolanız"></label>
+        <label class="auth-field" for="login-username">Kullanıcı adı</label><div class="auth-control"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg><input id="login-username" required maxlength="40" autocomplete="username" placeholder="ad.soyad" autocapitalize="none" spellcheck="false"></div>
+        <label class="auth-field" for="login-password">Parola</label><div class="auth-control auth-password"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="login-password" type="password" required maxlength="128" autocomplete="current-password" placeholder="Parolanız"><button type="button" id="toggle-login-password" aria-label="Parolayı göster" aria-controls="login-password" aria-pressed="false">Göster</button></div>
         <div class="auth-actions"><button type="button" id="forgot-password" class="text-button">Şifremi unuttum</button></div>
         <p id="auth-error" class="form-error" role="alert"></p>
         <button class="button primary full" id="auth-submit" type="submit">Giriş yap</button>
       </form>
       <p id="auth-help" class="auth-help muted small">Hesabınız yoksa kurum yöneticinize başvurun.</p>
-      <nav class="legal-links" aria-label="Bilgilendirme metinleri"><button type="button" data-legal="privacy">KVKK Aydınlatma Metni</button><button type="button" data-legal="terms">Kullanım Koşulları</button><button type="button" data-legal="cookies">Çerez Bilgilendirmesi</button></nav>
+        </div>
+      </div>
+      <footer class="auth-page-footer"><span>Sarıçam Belediyesi · ULAK</span><nav class="legal-links" aria-label="Bilgilendirme metinleri"><button type="button" data-legal="privacy">KVKK Aydınlatma Metni</button><button type="button" data-legal="terms">Kullanım Koşulları</button><button type="button" data-legal="cookies">Çerez Bilgilendirmesi</button></nav></footer>
     </div>
   </section>
 

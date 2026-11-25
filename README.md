@@ -30,7 +30,7 @@ Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yö
 - Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
 - Yönetici rolü diğer müdürlüklerin içeriklerine otomatik erişim vermez. Yönetici, müdürlük atamalarını düzenleyebilir; oda erişimi hesabın mevcut müdürlüğüne göre belirlenir.
 
-Arayüz sade bir giriş formu, solda alanlar menüsü ve tek sütun mesaj akışından oluşur. Katılımcılar alan başlığındaki düğmeden açılır. Yönetimde personel ve müdürlük ekleme formları açılır bölümlerdedir; mevcut personel ad, kullanıcı adı veya müdürlüğe göre filtrelenebilir. Mesajlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** mesajı gönderir.
+Giriş ekranı, lacivert belediye kimliği alanı ve açık renkli form panelinden oluşur. Mobilde kimlik alanı kısalır ve form tek sütunda gösterilir. Parola alanında erişilebilir göster/gizle kontrolü vardır; form sıfırlandığında parola tekrar gizlenir. Uygulama içinde solda alanlar menüsü ve tek sütun mesaj akışı bulunur. Katılımcılar alan başlığındaki düğmeden açılır. Yönetimde personel ve müdürlük ekleme formları açılır bölümlerdedir; mevcut personel ad, kullanıcı adı veya müdürlüğe göre filtrelenebilir. Mesajlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** mesajı gönderir.
 
 ## Örneklerle tarayıcı önizlemesi
 

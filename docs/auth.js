@@ -1,5 +1,8 @@
 // Login assistance and disclosure documents. Shared by the server and Pages UI.
 let recoveryRequestId='';
+function loginPasswordVisibility(visible){const button=$('#toggle-login-password');$('#login-password').type=visible?'text':'password';button.textContent=visible?'Gizle':'Göster';button.setAttribute('aria-pressed',String(visible));button.setAttribute('aria-label',visible?'Parolayı gizle':'Parolayı göster');}
+$('#toggle-login-password').addEventListener('click',()=>loginPasswordVisibility($('#login-password').type==='password'));
+$('#auth-form').addEventListener('reset',()=>loginPasswordVisibility(false));
 function recoveryMethod(){return 'email';}
 function recoveryAvailability(){
   const available=state.recoveryChannels?.[recoveryMethod()];

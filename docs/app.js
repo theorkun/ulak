@@ -34,7 +34,7 @@ async function boot(){
     state.recoveryChannels=status.recoveryChannels||{};
     if(state.setup){
       $('#forgot-password').hidden=true;
-      $('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent=status.localSetup?'Sunucu konsolundaki kodla yönetici hesabınızı oluşturun.':'Kurulum sunucu bilgisayarında yapılmalı.';
+      $('#auth-title').textContent=state.setup?'İlk kurulum':'Hoş geldiniz';$('#auth-description').textContent=status.localSetup?'Sunucu konsolundaki kodla yönetici hesabınızı oluşturun.':'Kurulum sunucu bilgisayarında yapılmalı.';
       $('#setup-fields').hidden=!status.localSetup;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=status.localSetup);$('#auth-submit').disabled=!status.localSetup;$('#auth-submit').textContent='Kurum hesabını oluştur';$('#login-password').minLength=10;$('#login-password').autocomplete='new-password';
       const token=new URLSearchParams(location.hash.slice(1)).get('setup');if(token){$('#setup-token').value=token;history.replaceState(null,'','/');}return;
     }
@@ -50,7 +50,7 @@ function signOut(){
   $('#forgot-password').hidden=false;
   state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.directory=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
   $$('dialog[open]').forEach(d=>d.close());$('#workspace').hidden=true;$('#auth-screen').hidden=false;$('#conversation-list').replaceChildren();$('#message-feed').replaceChildren();$('#message-input').value='';$('#chat-section').hidden=true;$('#welcome').hidden=false;
-  $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Giriş yap';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';
+  $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Hoş geldiniz';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';
 }
 $('#logout').addEventListener('click',async()=>{state.source?.close();try{await api('/api/logout',{});signOut();}catch(e){toast(e.message);if(state.user)connect();}});
 function connect(){state.source?.close();if(window.ULAK_DEMO){$('#connection-text').textContent='Tarayıcı demosu';return;}const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>scheduleRefresh(JSON.parse(e.data)));source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
