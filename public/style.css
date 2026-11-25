@@ -108,4 +108,14 @@ input:focus,select:focus,textarea:focus{outline-color:#008c9525;border-color:var
 .auth-ornament{display:none}
 .auth-page-footer{position:relative}
 @media(max-width:640px){.auth-screen::before{background-size:150px 150px;opacity:.16}.auth-intro::after{background-size:145px 145px;mask-image:linear-gradient(90deg,transparent 5%,#000);opacity:.24}}
+.auth-intro-copy{margin:48px 0 34px}
+.auth-intro-copy .auth-eyebrow{font-size:9px;letter-spacing:1.7px}
+.auth-intro-copy .auth-digital-network{display:block;width:min(100%,280px);height:auto;margin-top:28px;stroke:none;fill:none}
+.auth-digital-network .network-link{stroke:#7bbdc050;stroke-width:1;stroke-dasharray:3 5}
+.auth-digital-network .network-node{stroke:#78bdc266;fill:#ffffff04;stroke-width:1}
+.auth-digital-network .network-node-gold{stroke:#c6a04b77}
+.auth-digital-network .network-hub{stroke:#64c6c2;fill:#16778126;stroke-width:1}
+.auth-digital-network .network-symbol{stroke:#b5dcd9;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+.auth-digital-network .network-symbol-gold{stroke:#dfc17d}
+.auth-digital-network .network-dot{fill:#c6a04b;stroke:none}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
