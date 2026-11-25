@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#132a45">
   <title>ULAK · Tarayıcı Demosu</title>
   <link rel="icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=17">
-  <script src="browser-demo.js?v=17" defer></script>
-  <script src="app.js?v=17" defer></script>
-  <script src="auth.js?v=17" defer></script>
+  <link rel="stylesheet" href="style.css?v=18">
+  <script src="browser-demo.js?v=18" defer></script>
+  <script src="app.js?v=18" defer></script>
+  <script src="auth.js?v=18" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -74,14 +74,16 @@
     <main class="main-area">
       <section id="chat-section" class="room-section" hidden>
         <header class="room-header"><div><h1 id="chat-title">Genel Alan</h1><p id="chat-topic" class="muted small"></p></div><button id="chat-details" class="participants-button"><span data-icon="users"></span><span id="chat-subtitle">Katılımcılar</span></button></header>
+        <div class="timeline-wrap">
+          <div class="chat-timeline" tabindex="0" aria-label="Grup mesajları ve geçmiş"><div id="message-feed" class="message-feed" role="log" aria-label="Grup mesajları" aria-live="polite" aria-relevant="additions text"></div></div>
+          <button id="jump-latest" class="latest-button" hidden>Son mesajlara git ↓</button>
+        </div>
         <section class="composer-card" aria-labelledby="composer-title">
-          <h2 id="composer-title">Mesaj yaz</h2>
+          <h2 id="composer-title" class="sr-only">Mesaj yaz</h2>
           <div id="reply-preview" class="reply-preview" hidden><div><strong id="reply-label"></strong><span id="reply-text"></span></div><button class="icon-button" id="cancel-reply" aria-label="Yanıtı veya düzenlemeyi iptal et" data-icon="close"></button></div>
-          <form id="message-form"><label class="sr-only" for="message-input">Mesajınız</label><textarea id="message-input" rows="2" maxlength="4000" placeholder="Mesajınızı yazın…"></textarea><div class="composer-footer"><span id="message-length">0 / 4000</span><span class="keyboard-hint">Ctrl + Enter</span><button class="button primary" id="send-message" type="submit">Gönder</button></div></form>
+          <form id="message-form"><label class="sr-only" for="message-input">Mesajınız</label><textarea id="message-input" rows="1" maxlength="4000" placeholder="Bir mesaj yazın…"></textarea><button class="button primary" id="send-message" type="submit">Gönder</button></form>
+          <div class="composer-status"><span id="message-length">0 / 4000</span><span class="keyboard-hint">Enter ile gönder · Shift + Enter ile yeni satır</span></div>
         </section>
-        <div class="feed-heading"><h2>Mesajlar</h2><span>En yeni önce</span></div>
-        <button id="jump-latest" class="latest-button" hidden>Yeni mesajları göster</button>
-        <div id="message-feed" class="message-feed" role="log" aria-label="Grup mesajları" aria-live="polite"></div>
       </section>
       <section id="welcome" class="empty-workspace"><h2>Bir alan seçin</h2><p class="muted">Genel Alan veya kendi müdürlüğünüzle devam edin.</p></section>
     </main>

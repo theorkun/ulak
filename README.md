@@ -36,7 +36,11 @@ Yeni gerçek kurulumun ilk yönetici hesabı süper admin olur; kullanıcı adı
 - Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
 - Yönetici rolü diğer müdürlüklerin içeriklerine otomatik erişim vermez. Yönetici, müdürlük atamalarını düzenleyebilir; oda erişimi hesabın mevcut müdürlüğüne göre belirlenir.
 
-Giriş ekranı, lacivert belediye kimliği alanı ve açık renkli form panelinden oluşur. Mobilde kimlik alanı kısalır ve form tek sütunda gösterilir. Parola alanında erişilebilir göster/gizle kontrolü vardır; form sıfırlandığında parola tekrar gizlenir. Uygulama içinde solda alanlar menüsü ve tek sütun mesaj akışı bulunur. Katılımcılar alan başlığındaki düğmeden açılır. Yönetimde personel ve müdürlük ekleme formları açılır bölümlerdedir; mevcut personel ad, kullanıcı adı veya müdürlüğe göre filtrelenebilir. Mesajlar en yeniden eskiye sıralanır. Enter yeni satır ekler; **Ctrl + Enter** mesajı gönderir.
+Giriş ekranı, lacivert belediye kimliği alanı ve açık renkli form panelinden oluşur. Mobilde kimlik alanı kısalır ve form tek sütunda gösterilir. Parola alanında erişilebilir göster/gizle kontrolü vardır; form sıfırlandığında parola tekrar gizlenir. Sohbette kendi mesajlarınız sağda turkuaz, diğer personelin mesajları solda açık renkli baloncuklarda gösterilir. Mesajlar eskiden yeniye sıralanır, tarih ve okunmamış mesaj ayraçları vardır. Yazma alanı altta, grup başlığı üstte sabittir; yalnızca mesaj geçmişi kayar. Sol menü son mesajı, saatini ve okunmamış sayısını gösterir.
+
+Yeni mesaj geldiğinde en alttaysanız akış ilerler; eski mesajları okuyorsanız konumunuz korunur ve son mesajlara geçiş düğmesi gösterilir. Eski mesaj yükleme düğmesi geçmişin başındadır. Arama ve alıntı bağlantıları ilgili mesaja gider. Katılımcılar alan başlığındaki düğmeden açılır. Birebir mesajlaşma kapalıdır; grup erişim yetkileri aynıdır. Okunmamış sayıları gerçek okuma kayıtlarından gelir; kişi bazlı okundu/çift tik özelliği eklenmemiştir.
+
+Masaüstünde **Enter** mesajı gönderir; **Shift + Enter** yeni satır ekler. Dokunmatik klavyede Enter yeni satır ekler; Gönder düğmesi kullanılır. **Ctrl / Command + Enter** da gönderir. Yönetimde personel ve müdürlük ekleme formları açılır bölümlerdedir; mevcut personel ad, kullanıcı adı veya müdürlüğe göre filtrelenebilir.
 
 ## Örneklerle tarayıcı önizlemesi
 
