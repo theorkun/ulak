@@ -19,6 +19,7 @@ async function startPreview(options={}){
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
   ];
   for(const [username,name,department,role]of people)app.db.prepare('INSERT INTO users(username,name,department,role,password) VALUES(?,?,?,?,?)').run(username,name,department,role,username==='orkun'?adminPassword:password);
+  app.db.prepare("UPDATE users SET is_super_admin=1 WHERE username='orkun'").run();
   createRooms(app.db);
   const general=app.db.prepare("SELECT id FROM conversations WHERE scope='general'").get().id;
   const room=name=>app.db.prepare("SELECT c.id FROM conversations c JOIN departments d ON d.id=c.department_id WHERE c.scope='department' AND d.name=?").get(name).id;

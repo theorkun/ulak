@@ -5,6 +5,7 @@ const paths = { search:'<circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/>'
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name]||paths.building}</svg>`;
 $$('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 const initials = name => String(name).split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toLocaleUpperCase('tr');
+const roleName = role => ({super_admin:'Süper admin',admin:'Yönetici',member:'Personel'}[role]||'Personel');
 const clock = value => new Date(value).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
 const day = value => new Date(value).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
 const state = { user:null,csrf:'',rooms:[],directory:[],active:null,messages:[],more:false,history:false,version:0,reply:null,edit:null,sending:false,source:null,preview:false,setup:false,drafts:new Map(),departments:[],adminUsers:[] };
@@ -22,7 +23,8 @@ $$('dialog').forEach(d=>{d.addEventListener('cancel',e=>{if(state.user?.mustChan
 function profile(){
   if(!state.user)return;
   $('#profile-name').textContent=state.user.name;$('#profile-department').textContent=state.user.department;
-  $('#profile-avatar').textContent=initials(state.user.name);$('#admin-open').hidden=state.user.role!=='admin';
+  $('#profile-avatar').textContent=initials(state.user.name);$('#admin-open').hidden=!['admin','super_admin'].includes(state.user.role);$('#profile-role').textContent=roleName(state.user.role);
+  $$('#user-form [name="role"] option').forEach(option=>{option.hidden=option.disabled=option.value!=='member'&&state.user.role!=='super_admin';});
 }
 async function boot(){
   try{
@@ -120,7 +122,10 @@ function departmentOptions(selected){return state.departments.map(d=>`<option va
 function renderAdminUsers(){
   const query=fold($('#admin-user-filter').value);
   const people=state.adminUsers.filter(u=>fold(u.name+' '+u.username+' '+u.department).includes(query));
-  $('#admin-users').innerHTML=people.map(u=>`<div class="admin-user ${u.active?'':'inactive'}"><div><strong>${esc(u.name)}</strong><p>${esc(u.username)} · ${u.role==='admin'?'Yönetici':'Personel'} · ${u.active?'Aktif':'Pasif'}</p></div><select data-assignment="${u.id}" aria-label="${esc(u.name)} müdürlüğü">${departmentOptions(u.departmentId)}</select><button data-contact-user="${u.id}">İletişim</button><button data-assign-save="${u.id}">Ata</button>${u.id!==state.user.id?`<button data-reset-user="${u.id}">Parola yenile</button><button data-toggle-user="${u.id}">${u.active?'Pasife al':'Etkinleştir'}</button>`:''}</div>`).join('')||'<p class="muted small">Personel bulunamadı.</p>';
+  $('#admin-users').innerHTML=people.map(u=>{
+    const manageable=state.user.role==='super_admin'||u.role==='member';
+    return `<div class="admin-user ${u.active?'':'inactive'}"><div><strong>${esc(u.name)}</strong><p>${esc(u.username)} · ${roleName(u.role)} · ${u.active?'Aktif':'Pasif'}</p></div><select data-assignment="${u.id}" aria-label="${esc(u.name)} müdürlüğü" ${manageable?'':'disabled'}>${departmentOptions(u.departmentId)}</select>${manageable?`<button data-contact-user="${u.id}">İletişim</button><button data-assign-save="${u.id}">Ata</button>${u.id!==state.user.id?`<button data-reset-user="${u.id}">Parola yenile</button><button data-toggle-user="${u.id}">${u.active?'Pasife al':'Etkinleştir'}</button>`:''}`:''}${state.user.role==='super_admin'&&u.id!==state.user.id?`<div class="role-controls"><label for="role-${u.id}">Yetki</label><select id="role-${u.id}" data-role-assignment="${u.id}" aria-label="${esc(u.name)} yetkisi">${['member','admin','super_admin'].map(role=>`<option value="${role}" ${u.role===role?'selected':''}>${roleName(role)}</option>`).join('')}</select><button data-role-save="${u.id}">Yetkiyi kaydet</button></div>`:''}</div>`;
+  }).join('')||'<p class="muted small">Personel bulunamadı.</p>';
 }
 $('#admin-user-filter').addEventListener('input',renderAdminUsers);
 async function adminPanel(){
@@ -128,7 +133,7 @@ async function adminPanel(){
     const [people,depts,audit]=await Promise.all([api('/api/admin/users'),api('/api/admin/departments'),api('/api/admin/audit')]);state.adminUsers=people.users;state.departments=depts.departments;
     $('#user-department').innerHTML=departmentOptions(state.user.departmentId);$('#department-list').innerHTML=state.departments.map(d=>`<span class="department-tag">${esc(d.name)} · ${d.people} personel</span>`).join('');
     renderAdminUsers();
-    const labels={contact_changed:'İletişim bilgileri değişti',password_recovered:'Parola kurtarıldı',recovery_delivery_failed:'Kurtarma iletisi gönderilemedi',setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
+    const labels={role_changed:'Kullanıcı yetkisi değişti',contact_changed:'İletişim bilgileri değişti',password_recovered:'Parola kurtarıldı',recovery_delivery_failed:'Kurtarma iletisi gönderilemedi',setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
     $('#audit-list').innerHTML=audit.entries.map(a=>`<div class="audit-entry">${esc(day(a.created_at))} ${clock(a.created_at)} · ${esc(a.actor||'Sistem')} · ${esc(labels[a.action]||a.action)} · Kayıt ${esc(a.target)}</div>`).join('');
   }catch(error){$('#admin-error').textContent=error.message;}
 }
@@ -150,6 +155,7 @@ document.addEventListener('click',async e=>{
     const assign=e.target.closest('[data-assign-save]');if(assign){const id=Number(assign.dataset.assignSave),departmentId=Number($(`[data-assignment="${id}"]`).value);await api('/api/admin/users/'+id,{departmentId},'PATCH');await refresh(true);await adminPanel();toast('Müdürlük erişimi güncellendi.');}
     const toggle=e.target.closest('[data-toggle-user]');if(toggle){const u=state.adminUsers.find(u=>u.id===Number(toggle.dataset.toggleUser));if(u&&confirm(`${u.name} hesabı ${u.active?'pasife alınsın':'etkinleştirilsin'} mı?`)){await api('/api/admin/users/'+u.id,{active:!u.active},'PATCH');await adminPanel();await refresh(true);}}
     const reset=e.target.closest('[data-reset-user]');if(reset){const u=state.adminUsers.find(u=>u.id===Number(reset.dataset.resetUser));if(u&&confirm(`${u.name} için geçici parola yenilensin mi? Mevcut oturumları kapanacak.`)){const result=await api(`/api/admin/users/${u.id}/reset`,{});showCredential(u.username,result.temporaryPassword);}}
+    const roleButton=e.target.closest('[data-role-save]');if(roleButton){const id=Number(roleButton.dataset.roleSave),u=state.adminUsers.find(u=>u.id===id),role=$(`[data-role-assignment="${id}"]`).value;if(u&&u.role!==role&&confirm(`${u.name} yetkisi ${roleName(role)} olarak değiştirilsin mi?`)){await api('/api/admin/users/'+id,{role},'PATCH');await adminPanel();toast('Kullanıcı yetkisi güncellendi.');}}
   }catch(error){toast(error.message);}
 });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.user&&!state.user.mustChangePassword)scheduleRefresh({kind:'directory',conversationId:state.active});});

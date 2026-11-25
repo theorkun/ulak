@@ -8,7 +8,7 @@ Arayüzde Selçuklu turkuazı (`#008C95`), koyu lacivert (`#132A45`) ve altın s
 
 ## GitHub üzerinden tarayıcı demosu
 
-**[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme yöneticisi: `orkun` · Parola: `admin`
+**[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme süper admini: `orkun` · Parola: `admin`
 
 Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Genel Alan, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
 
@@ -23,6 +23,10 @@ Menüde Genel Alan ve kullanıcının kendi müdürlüğü doğrudan gösterilir
 Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yönetici listeden müdürlüğü seçebilir. Önceki “İnsan Kaynakları Müdürlüğü” gibi bilinen kısa adlar, resmî ad henüz ayrı bir kayıt olarak yoksa oda geçmişi ve personel atamaları korunarak resmî ada güncellenir. Kurumun ayrıca tanımladığı özel birimler silinmez.
 
 ## İletişim modeli
+
+**Süper admin:** Önizlemede `orkun` hesabına atanmıştır. Yönetimde kullanıcıların personel/yönetici/süper admin rollerini değiştirebilir ve yönetici hesaplarını düzenleyebilir. Normal yöneticiler personel hesaplarını yönetir; yönetici hesabı oluşturamaz, başka yöneticileri düzenleyemez veya yetki veremez. Yetki değişiklikleri ilgili hesabın oturumlarını ve bekleyen parola yenileme kodlarını iptal eder ve işlem kaydına yazılır. Kendi üst yetkisini kaldırma ve son aktif süper admini kapatma engellenir. Süper adminin grup içeriklerine erişimi de hesabının müdürlük atamasına göre belirlenir.
+
+Yeni gerçek kurulumun ilk yönetici hesabı süper admin olur; kullanıcı adına bakılarak otomatik yetki verilmez. Eski veritabanlarındaki hesaplar korunur ve `is_super_admin` alanı eklenirken mevcut yöneticiler otomatik yükseltilmez. Eski bir kurulumda üst yetki aktarımı gerekiyorsa kurum BT birimi yedek alıp yetkili hesabı ayrıca belirlemelidir.
 
 - **Genel Alan:** Tüm müdürlüklerin aktif personeli otomatik katılır; herkes paylaşım yapabilir.
 - **Müdürlük odası:** Her müdürlüğün tek odası vardır. Yalnızca o müdürlüğe atanmış aktif personel okuyabilir, arayabilir ve paylaşım yapabilir.
@@ -40,7 +44,7 @@ Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırı
 
 | Kullanıcı | Müdürlük | Yetki |
 | --- | --- | --- |
-| `orkun` | Bilgi İşlem Müdürlüğü | Yönetici |
+| `orkun` | Bilgi İşlem Müdürlüğü | Süper admin |
 | `demo.insan` | İnsan Kaynakları Müdürlüğü | Personel |
 | `demo.destek` | Destek Hizmetleri Müdürlüğü | Personel |
 | `demo.mali` | Mali Hizmetler Müdürlüğü | Personel |

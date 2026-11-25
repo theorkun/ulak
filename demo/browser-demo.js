@@ -5,7 +5,7 @@
   const password='UlakDemo2026!';
   const departments=window.ULAK_DEMO_DEPARTMENTS.map((name,i)=>({id:i+1,name,official:true}));
   const people=[
-    ['orkun','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','admin'],
+    ['orkun','Deniz Yılmaz','Bilgi İşlem Müdürlüğü','super_admin'],
     ['demo.insan','Elif Demir','İnsan Kaynakları ve Eğitim Müdürlüğü','member'],
     ['demo.destek','Mert Kaya','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.mali','Zeynep Arslan','Mali Hizmetler Müdürlüğü','member'],
@@ -24,7 +24,8 @@
   const roomId=id=>id+1;
   const allowed=id=>id===1||id===roomId(current.departmentId);
   const guard=id=>{if(!allowed(id))fail(403,'Yalnızca Genel Alan ve kendi müdürlüğünüze erişebilirsiniz.');};
-  const admin=()=>{if(current.role!=='admin')fail(403,'Yönetici yetkisi gerekli.');};
+  const admin=()=>{if(!['admin','super_admin'].includes(current.role))fail(403,'Yönetici yetkisi gerekli.');};
+  const manage=user=>{if(current.role!=='super_admin'&&user.role!=='member')fail(403,'Yönetici hesapları süper admin yetkisi gerektirir.');};
   const validText=(value,min,max,label)=>{const s=String(value||'').trim();if(s.length<min||s.length>max)fail(400,label+' uzunluğu uygun değil.');return s;};
   function post(conversationId,senderId,body,minutes=0,extra={}){
     const m={id:nextMessage++,conversationId,senderId,body,createdAt:new Date(Date.now()-minutes*60000).toISOString(),editedAt:null,deleted:false,replyTo:null,...extra};messages.push(m);return m;
@@ -85,7 +86,8 @@
       if(path==='/api/admin/users'){
         if(verb==='GET')return{users:people.map(u=>({...publicUser(u),email:u.email||'',phone:u.phone||''}))};
         const username=validText(input.username,3,40,'Kullanıcı adı').toLowerCase(),name=validText(input.name,2,80,'Ad soyad'),d=departments.find(d=>d.id===Number(input.departmentId));
-        if(!/^[a-z0-9._-]+$/.test(username)||!d||!['admin','member'].includes(input.role))fail(400,'Bilgileri kontrol edin.');
+        if(!/^[a-z0-9._-]+$/.test(username)||!d||!['super_admin','admin','member'].includes(input.role))fail(400,'Bilgileri kontrol edin.');
+        if(input.role!=='member'&&current.role!=='super_admin')fail(403,'Yönetici yetkisini yalnızca süper admin verebilir.');
         if(people.some(p=>p.username===username))fail(409,'Kullanıcı adı zaten var.');
         const temporaryPassword='Demo-'+crypto.randomUUID().slice(0,12)+'!';
         const user={id:Math.max(...people.map(p=>p.id))+1,username,name,department:d.name,departmentId:d.id,role:input.role,active:true,mustChangePassword:true,password:temporaryPassword,email:String(input.email||''),phone:String(input.phone||'')};people.push(user);log('user_created',user.id);return{user:publicUser(user),temporaryPassword};
@@ -93,6 +95,13 @@
       match=path.match(/^\/api\/admin\/users\/(\d+)(\/reset)?$/);
       if(match){
         const user=people.find(p=>p.id===Number(match[1]));if(!user)fail(404,'Personel bulunamadı.');
+        manage(user);
+        if(Object.hasOwn(input,'role')){
+          if(current.role!=='super_admin'||!['super_admin','admin','member'].includes(input.role))fail(403,'Yetki değişikliği süper admin gerektirir.');
+          if(user.id===current.id&&input.role!==current.role)fail(400,'Kendi süper admin yetkinizi kaldıramazsınız.');
+          if(user.role==='super_admin'&&user.active&&input.role!=='super_admin'&&people.filter(p=>p.active&&p.role==='super_admin').length<=1)fail(400,'Son aktif süper admin kaldırılamaz.');
+          user.role=input.role;log('role_changed',user.id);
+        }
         if(Object.hasOwn(input,'email')||Object.hasOwn(input,'phone')){user.email=String(input.email??user.email??'');user.phone=String(input.phone??user.phone??'');log('contact_changed',user.id);}
         if(match[2]){if(user.id===current.id)fail(400,'Kendi parolanızı profilinizden değiştirin.');const temporaryPassword='Demo-'+crypto.randomUUID().slice(0,12)+'!';user.password=temporaryPassword;user.mustChangePassword=true;log('password_reset',user.id);return{temporaryPassword};}
         if(input.departmentId){const d=departments.find(d=>d.id===Number(input.departmentId));if(!d)fail(400,'Müdürlük bulunamadı.');user.departmentId=d.id;user.department=d.name;log('department_changed',user.id);}

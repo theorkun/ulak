@@ -35,3 +35,11 @@ test('Pages demo account creation, forced password change and reassignment stay 
   await request('/api/logout',{});await request('/api/login',{username:'example.person',password:'Example-new-password!'});
   assert.equal((await request('/api/conversations')).conversations[1].title,dept.name);
 });
+test('Orkun has super admin authority and ordinary demo admins cannot grant privileges',async()=>{
+  const request=demo();const me=await request('/api/login',{username:'orkun',password:'admin'});assert.equal(me.user.role,'super_admin');
+  await assert.rejects(request('/api/admin/users/'+me.user.id,{role:'member'},'PATCH'),{status:400});
+  const target=(await request('/api/admin/users')).users.find(u=>u.username==='demo.insan');await request('/api/admin/users/'+target.id,{role:'admin'},'PATCH');
+  await request('/api/logout',{});await request('/api/login',{username:'demo.insan',password:'UlakDemo2026!'});
+  await assert.rejects(request('/api/admin/users/'+target.id,{role:'super_admin'},'PATCH'),{status:403});
+  await assert.rejects(request('/api/admin/users/'+me.user.id+'/reset',{}),{status:403});
+});

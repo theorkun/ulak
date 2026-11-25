@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#132a45">
   <title>ULAK · Kurum İletişim Alanı</title>
   <link rel="icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=12">
-  <script src="app.js?v=12" defer></script>
-  <script src="auth.js?v=12" defer></script>
+  <link rel="stylesheet" href="style.css?v=13">
+  <script src="app.js?v=13" defer></script>
+  <script src="auth.js?v=13" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -51,7 +51,7 @@
       <a class="brand" href="/">ULAK</a>
       <button id="global-search" class="search-button"><span data-icon="search"></span><span>Mesaj ara</span></button>
       <div class="masthead-user">
-        <button id="profile-open" class="user-profile" aria-label="Hesap ve parola"><span id="profile-avatar" class="avatar"></span><span><strong id="profile-name"></strong><small id="profile-department"></small></span></button>
+        <button id="profile-open" class="user-profile" aria-label="Hesap ve parola"><span id="profile-avatar" class="avatar"></span><span><strong id="profile-name"></strong><small id="profile-department"></small><small id="profile-role" class="profile-role"></small></span></button>
         <button class="icon-button" id="logout" aria-label="Çıkış yap" title="Çıkış yap" data-icon="logout"></button>
       </div>
     </header>
@@ -89,7 +89,7 @@
   </dialog>
   <dialog id="admin-dialog" class="wide-dialog" aria-labelledby="admin-title">
     <div class="dialog-head"><h2 id="admin-title">Yönetim</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
-    <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>E-posta<input name="email" type="email" maxlength="254" autocomplete="off"></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>
+    <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>E-posta<input name="email" type="email" maxlength="254" autocomplete="off"></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option><option value="super_admin">Süper admin</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>
     <details class="admin-section" id="departments-section"><summary>Müdürlükleri yönet</summary><form id="department-form" class="inline-form"><label class="sr-only" for="department-name">Müdürlük adı</label><input id="department-name" name="name" required minlength="2" maxlength="80" placeholder="Yeni müdürlük adı"><button class="button primary" type="submit">Ekle</button></form><div id="department-list" class="department-list"></div></details>
     <p id="admin-error" class="form-error" role="alert"></p>
     <label class="admin-search-label" for="admin-user-filter">Personel ara<input id="admin-user-filter" type="search" placeholder="Ad, kullanıcı adı veya müdürlük…"></label>

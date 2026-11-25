@@ -11,7 +11,8 @@ const { createRecovery, contacts } = require('./recovery.cjs');
 const scrypt = promisify(crypto.scrypt);
 const fold = value => String(value).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
-const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, departmentId: u.department_id, role: u.role, active: !!u.active, mustChangePassword: !!u.must_change });
+const userRole = u => u.is_super_admin ? 'super_admin' : u.role;
+const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, departmentId: u.department_id, role: userRole(u), active: !!u.active, mustChangePassword: !!u.must_change });
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const text = (value, min, max, label) => {
   if (typeof value !== 'string' || value.trim().length < min || value.trim().length > max) fail(400, `${label}: ${min}–${max} karakter kullanın.`);
@@ -45,6 +46,7 @@ function createChat(options = {}) {
     CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES conversations(id), sender_id INTEGER NOT NULL REFERENCES users(id), body TEXT NOT NULL, client_id TEXT NOT NULL, reply_to INTEGER REFERENCES messages(id), created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), edited_at TEXT, deleted_at TEXT, UNIQUE(sender_id,client_id));
     CREATE INDEX IF NOT EXISTS messages_chat ON messages(conversation_id,id);
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor_id INTEGER REFERENCES users(id), action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`);
+  if(!db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='is_super_admin'))db.exec('ALTER TABLE users ADD COLUMN is_super_admin INTEGER NOT NULL DEFAULT 0 CHECK(is_super_admin IN (0,1))');
   db.function('fold', { deterministic: true }, fold);
   const rooms = createRooms(db);
   const setupToken = options.setupToken || crypto.randomBytes(24).toString('hex');
@@ -105,6 +107,7 @@ function createChat(options = {}) {
     try { const value = JSON.parse(data); if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(); return value; } catch { fail(400, 'Geçersiz istek.'); }
   }
   const admin = user => { if (user.role !== 'admin') fail(403, 'Bu işlem yönetici yetkisi gerektirir.'); };
+  const manageUser = (actor,target) => {if(!actor.is_super_admin&&(target.role==='admin'||target.is_super_admin))fail(403,'Yönetici hesaplarını yalnızca süper admin düzenleyebilir.');};
   const recovery=createRecovery({db,options,limited,passwordHash,audit,transaction,endSessions:id=>{for(const c of clients)if(c.userId===id)c.res.end();}});
   async function handle(req, res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -134,6 +137,7 @@ function createChat(options = {}) {
       if (countUsers()) fail(409, 'Kurulum zaten tamamlandı.');
       const userId = transaction(() => {
         const id = Number(db.prepare("INSERT INTO users(username,name,password,role,department) VALUES(?,?,?,'admin',?)").run(username, name, password,text(input.department || 'Yönetim',2,80,'Müdürlük')).lastInsertRowid);
+        db.prepare('UPDATE users SET is_super_admin=1 WHERE id=?').run(id);
         rooms.sync(id);
         audit(id, 'setup', id); return id;
       });
@@ -172,15 +176,15 @@ function createChat(options = {}) {
       }
       if (user.must_change) fail(428, 'Devam etmeden önce geçici parolanızı değiştirin.');
       if (route === '/api/users' && req.method === 'GET') {
-        const users = db.prepare('SELECT id,username,name,department,role,active FROM users WHERE active=1 AND (department_id=? OR id=?) ORDER BY name').all(user.department_id,user.id);
-        return json(res, 200, { users: users.map(u => ({ ...u, online: online(u.id) })) });
+        const users = db.prepare('SELECT id,username,name,department,role,active,is_super_admin FROM users WHERE active=1 AND (department_id=? OR id=?) ORDER BY name').all(user.department_id,user.id);
+        return json(res, 200, { users: users.map(u => {const {is_super_admin,...person}=u;return{...person,role:userRole(u),online:online(u.id)};}) });
       }
       if (route === '/api/directory' && req.method === 'GET') {
         const departments=db.prepare('SELECT id,name,official FROM departments ORDER BY name').all().map(d=>({id:d.id,name:d.name,official:!!d.official,accessible:d.id===user.department_id}));
         return json(res,200,{departments});
       }
       if (route === '/api/admin/departments' && req.method === 'GET') { admin(user); return json(res,200,{ departments: db.prepare('SELECT d.id,d.name,(SELECT count(*) FROM users u WHERE u.department_id=d.id AND u.active=1) people FROM departments d ORDER BY d.name').all() }); }
-      if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); event({kind:'directory'}); return json(res,201,{department:dept}); }
+      if (route === '/api/admin/departments' && req.method === 'POST') { admin(user); const input=await body(req);session(req); const name=text(input.name,2,80,'Müdürlük adı'); const dept=transaction(()=>rooms.department(name,user.id)); audit(user.id,'department_created',dept.id); event({kind:'directory'}); return json(res,201,{department:dept}); }
       if (route === '/api/admin/users' && req.method === 'GET') { admin(user); return json(res, 200, { users: db.prepare('SELECT * FROM users ORDER BY active DESC,name').all().map(u=>({...publicUser(u),email:u.email,phone:u.phone})) }); }
       if (route === '/api/admin/users' && req.method === 'POST') {
         admin(user); const input = await body(req);
@@ -191,10 +195,14 @@ function createChat(options = {}) {
         if (!/^[a-z0-9._-]+$/.test(username)) fail(400, 'Kullanıcı adı İngilizce harf, rakam, nokta ve tire içermeli.');
         if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail(409, 'Bu kullanıcı adı zaten var.');
         const temporaryPassword = crypto.randomBytes(12).toString('base64url');
+        const role=input.role??'member';
+        if(!['member','admin','super_admin'].includes(role))fail(400,'Geçersiz yetki.');
+        if(role!=='member'&&!user.is_super_admin)fail(403,'Yönetici yetkisini yalnızca süper admin verebilir.');
         const contact=contacts(input);
         const password = await passwordHash(temporaryPassword); session(req);
         const id = transaction(() => {
-          const id = Number(db.prepare('INSERT INTO users(username,name,department,password,role,must_change) VALUES(?,?,?,?,?,1)').run(username, name, department, password, input.role === 'admin' ? 'admin' : 'member').lastInsertRowid);
+          const id = Number(db.prepare('INSERT INTO users(username,name,department,password,role,must_change) VALUES(?,?,?,?,?,1)').run(username, name, department, password, role==='member'?'member':'admin').lastInsertRowid);
+          if(role==='super_admin')db.prepare('UPDATE users SET is_super_admin=1 WHERE id=?').run(id);
           rooms.sync(id);
           db.prepare('UPDATE users SET email=?,phone=? WHERE id=?').run(contact.email,contact.phone,id);
           audit(user.id, 'user_created', id); return id;
@@ -203,29 +211,36 @@ function createChat(options = {}) {
       }
       let match = route.match(/^\/api\/admin\/users\/(\d+)$/);
       if (match && req.method === 'PATCH') {
-        admin(user); const id = Number(match[1]), input = await body(req);
+        admin(user); const id = Number(match[1]), input = await body(req);session(req);
         const target = db.prepare('SELECT * FROM users WHERE id=?').get(id); if (!target) fail(404, 'Kullanıcı bulunamadı.');
+        manageUser(user,target);
+        const changeRole=Object.hasOwn(input,'role');
+        if(changeRole&&(!user.is_super_admin||!['member','admin','super_admin'].includes(input.role)))fail(403,'Yetki değişikliği süper admin gerektirir.');
+        if(changeRole&&id===user.id&&input.role!==userRole(user))fail(400,'Kendi süper admin yetkinizi bu ekrandan kaldıramazsınız.');
+        if(target.is_super_admin&&target.active&&(input.active===false||(changeRole&&input.role!=='super_admin'))&&db.prepare('SELECT count(*) n FROM users WHERE is_super_admin=1 AND active=1').get().n<=1)fail(400,'Son aktif süper admin kaldırılamaz.');
         if (id === user.id && input.active === false) fail(400, 'Kendi hesabınızı kapatamazsınız.');
         const changeContact=Object.hasOwn(input,'email')||Object.hasOwn(input,'phone');
         const contact=changeContact?contacts({email:input.email??target.email,phone:input.phone??target.phone}):null;
-        if (typeof input.active !== 'boolean' && input.departmentId == null && !changeContact) fail(400,'Güncellenecek bilgi gerekli.');
+        if (typeof input.active !== 'boolean' && input.departmentId == null && !changeContact && !changeRole) fail(400,'Güncellenecek bilgi gerekli.');
         const dept = input.departmentId != null ? db.prepare('SELECT * FROM departments WHERE id=?').get(Number(input.departmentId)) : null;
         if (input.departmentId != null && !dept) fail(400,'Müdürlük bulunamadı.');
         transaction(() => {
+          if(changeRole){db.prepare('UPDATE users SET role=?,is_super_admin=? WHERE id=?').run(input.role==='member'?'member':'admin',input.role==='super_admin'?1:0,id);db.prepare('DELETE FROM sessions WHERE user_id=?').run(id);recovery.invalidate(id);audit(user.id,'role_changed',id);}
           if(contact){db.prepare('UPDATE users SET email=?,phone=? WHERE id=?').run(contact.email,contact.phone,id);audit(user.id,'contact_changed',id);}
           if(contact||typeof input.active==='boolean')recovery.invalidate(id);
           if (typeof input.active === 'boolean') { db.prepare('UPDATE users SET active=? WHERE id=?').run(input.active ? 1 : 0,id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id,input.active?'user_enabled':'user_disabled',id); }
           if (dept) { db.prepare('UPDATE users SET department_id=?,department=? WHERE id=?').run(dept.id,dept.name,id); audit(user.id,'department_changed',id); }
           rooms.sync(id);
         });
-        if (typeof input.active === 'boolean') for (const c of clients) if (c.userId === id) c.res.end(); event({ kind: 'directory' }); return json(res, 200, { ok: true });
+        if (typeof input.active === 'boolean'||changeRole) for (const c of clients) if (c.userId === id) c.res.end(); event({ kind: 'directory' }); return json(res, 200, { ok: true });
       }
       match = route.match(/^\/api\/admin\/users\/(\d+)\/reset$/);
       if (match && req.method === 'POST') {
         admin(user); const id = Number(match[1]);
         if (id === user.id) fail(400, 'Kendi parolanızı profil ekranından değiştirin.');
-        if (!db.prepare('SELECT id FROM users WHERE id=?').get(id)) fail(404, 'Kullanıcı bulunamadı.');
+        const target=db.prepare('SELECT * FROM users WHERE id=?').get(id);if(!target)fail(404,'Kullanıcı bulunamadı.');manageUser(user,target);
         const temporaryPassword = crypto.randomBytes(12).toString('base64url'), password = await passwordHash(temporaryPassword); session(req);
+        manageUser(user,db.prepare('SELECT * FROM users WHERE id=?').get(id));
         transaction(() => { db.prepare('UPDATE users SET password=?,must_change=1 WHERE id=?').run(password, id); recovery.invalidate(id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(id); audit(user.id, 'password_reset', id); });
         for (const c of clients) if (c.userId === id) c.res.end(); return json(res, 200, { temporaryPassword });
       }
