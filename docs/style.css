@@ -118,4 +118,7 @@ input:focus,select:focus,textarea:focus{outline-color:#008c9525;border-color:var
 .auth-digital-network .network-symbol{stroke:#b5dcd9;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
 .auth-digital-network .network-symbol-gold{stroke:#dfc17d}
 .auth-digital-network .network-dot{fill:#c6a04b;stroke:none}
+.auth-municipal-header{display:flex;justify-content:center;align-items:center;width:100%;margin:0 0 23px}
+.auth-municipal-header .municipal-logo{display:block;width:104px;height:auto;object-fit:contain}
+@media(max-width:640px){.auth-municipal-header{margin-bottom:18px}.auth-municipal-header .municipal-logo{width:88px}.auth-intro .auth-branding{justify-content:center;text-align:center}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
