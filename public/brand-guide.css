@@ -1,14 +1,15 @@
 /* Sarıçam identity guide: pp. 7-18 and digital examples pp. 34-35.
    Use the guide's stated RGB values, rather than sampling CMYK preview colors.
-   No font binary is redistributed; Cambria/Times are approved local fallbacks. */
+   Typography follows the user's subsequent kobigo.com.tr/saricam reference.
+   Poppins and Quicksand are self-hosted with their SIL OFL license texts. */
 :root{
   --brand-turquoise:#00b2a9;--brand-red:#c8102e;--brand-charcoal:#4d4d4d;
   --turquoise:var(--brand-turquoise);--accent:var(--brand-turquoise);
   --navy:var(--brand-charcoal);--gold:var(--brand-red);--gold-soft:#edf9f7;
   --ink:var(--brand-charcoal);--muted:#666;--line:#dce5e3;--bg:#f4f7f6;
   --link:#00766f;--on-turquoise:#12332f;
-  --font:'DIN Pro','DINPro','Cambria','Times New Roman',serif;
-  --heading:'Cambria','Times New Roman',serif;--preview-height:28px;
+  --font:'Poppins',Arial,sans-serif;
+  --heading:'Quicksand','Poppins',Arial,sans-serif;--preview-height:28px;
 }
 body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--font)}
 input,select,textarea{font-family:var(--font);font-size:16px;color:var(--ink);border-color:var(--line);border-radius:5px}
@@ -73,6 +74,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand-turquoise);outl
 /* The white content sheet and turquoise header rule follow the content example. */
 .masthead{background:white;border-bottom:4px solid var(--brand-turquoise)}
 .masthead>.brand,.masthead .brand-name{color:var(--ink)}
+.masthead>.brand,.room-nav strong,.sidebar-heading h2{font-family:var(--heading)}
 .masthead .brand-description{font-size:14px;color:var(--ink)}
 .masthead .search-button,.masthead .icon-button,.masthead .user-profile strong,.masthead .user-profile small{color:var(--ink)}
 .masthead .search-button:hover,.masthead .icon-button:hover{background:#edf9f7;color:var(--link)}

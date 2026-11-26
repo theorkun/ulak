@@ -322,8 +322,11 @@ function createChat(options = {}) {
     }
     if (!['GET', 'HEAD'].includes(req.method)) fail(405, 'Yöntem desteklenmiyor.');
     const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/auth.js': ['auth.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/brand-guide.css': ['brand-guide.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/selcuklu-motif.svg': ['selcuklu-motif.svg', 'image/svg+xml'], '/saricam-kurumsal-desen.png': ['saricam-kurumsal-desen.png', 'image/png'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
+    files['/fonts.css']=['fonts.css','text/css'];
+    for(const name of require('./font-assets.cjs'))files['/fonts/'+name]=['fonts/'+name,name.endsWith('.woff2')?'font/woff2':'text/plain'];
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
-    res.writeHead(200, { 'Content-Type': `${file[1]}; charset=utf-8`, 'Cache-Control': 'no-cache' });
+    const contentType=file[1].startsWith('text/')||file[1]==='image/svg+xml'?`${file[1]}; charset=utf-8`:file[1];
+    res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-cache' });
     if (req.method === 'HEAD') res.end(); else res.end(fs.readFileSync(path.join(__dirname, 'public', file[0])));
   }
   const listener = (req, res) => handle(req, res).catch(error => {

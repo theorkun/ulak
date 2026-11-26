@@ -4,7 +4,7 @@ Turkuaz Kurumsal İletişim, kurumun yerel ağında kullanılan, **yalnızca gru
 
 Kaynak depo: https://github.com/theorkun/ulak
 
-Şablon [Sarıçam Belediyesi Kurumsal Kimlik Kılavuzu](https://kobigo.com.tr/saricam/upload/files/kurumsal-kimlik-kilavuzu/kurumsal-kimlik-kilavuzu_8375.pdf) esas alınarak uyarlanmıştır. Ana renkler kılavuzun 14. sayfasındaki RGB değerleridir: turkuaz `#00B2A9`, kırmızı `#C8102E`, antrasit `#4D4D4D`. Tema `public/brand-guide.css` üzerinden uygulanır. Başlıklar Cambria/Times New Roman; metinler DIN Pro/DINPro öncelikli, Cambria/Times New Roman yedeklidir. Fontlar cihazdan kullanılır; lisanslı font dosyası dağıtılmaz. Uygulama haritası ve kaynak sayfalar [BRAND-GUIDE.md](BRAND-GUIDE.md) içindedir. Giriş ekranındaki resmî belediye logosu aynı PNG dosyası ve oranlarıyla, beyaz boşluk alanı içinde korunur.
+Şablon [Sarıçam Belediyesi Kurumsal Kimlik Kılavuzu](https://kobigo.com.tr/saricam/upload/files/kurumsal-kimlik-kilavuzu/kurumsal-kimlik-kilavuzu_8375.pdf) esas alınarak uyarlanmıştır. Ana renkler kılavuzun 14. sayfasındaki RGB değerleridir: turkuaz `#00B2A9`, kırmızı `#C8102E`, antrasit `#4D4D4D`. Tema `public/brand-guide.css` üzerinden uygulanır. Sonraki kullanıcı talebiyle web tipografisi [referans belediye sitesine](https://kobigo.com.tr/saricam/) uyarlanmıştır: metin ve formlar **Poppins**, başlık ve menü vurguları **Quicksand** kullanır. Türkçe karakterleri kapsayan yerel WOFF2 dosyaları ve SIL OFL lisansları `public/fonts/` içindedir; istemci dış font sunucularına bağlanmaz. Uygulama haritası ve kaynak sayfalar [BRAND-GUIDE.md](BRAND-GUIDE.md) içindedir. Giriş ekranındaki resmî belediye logosu aynı PNG dosyası ve oranlarıyla, beyaz boşluk alanı içinde korunur.
 
 ## GitHub üzerinden tarayıcı demosu
 
