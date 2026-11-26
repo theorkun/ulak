@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#132a45">
+  <meta name="theme-color" content="#00b2a9">
   <title>Turkuaz Kurumsal İletişim · Tarayıcı Demosu</title>
-  <link rel="icon" href="icon.svg?v=19">
-  <link rel="stylesheet" href="style.css?v=19">
-  <script src="browser-demo.js?v=19" defer></script>
-  <script src="app.js?v=19" defer></script>
-  <script src="auth.js?v=19" defer></script>
+  <link rel="icon" href="icon.svg?v=20">
+  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="brand-guide.css?v=20">
+  <script src="browser-demo.js?v=20" defer></script>
+  <script src="app.js?v=20" defer></script>
+  <script src="auth.js?v=20" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -17,7 +18,7 @@
       <div class="auth-shell">
         <aside class="auth-intro" aria-label="Turkuaz Kurumsal İletişim kurum içi iletişim">
           <div class="auth-branding">
-            <img class="municipal-logo" src="saricam-belediyesi-logo.png" width="88" height="115" alt="Sarıçam Belediyesi logosu">
+            <div class="municipal-logo-clearspace"><img class="municipal-logo" src="saricam-belediyesi-logo.png" width="88" height="115" alt="Sarıçam Belediyesi logosu"></div>
             <div class="auth-identity"><a class="brand" href="./" aria-label="Turkuaz Kurumsal İletişim"><span class="brand-name">Turkuaz</span> <span class="brand-description">Kurumsal İletişim</span></a><p>Sarıçam Belediyesi</p></div>
           </div>
           <div class="auth-intro-copy"><span class="auth-eyebrow">KURUMSAL İLETİŞİM PLATFORMU</span><h2>Dijital iletişim,<br><span>tek merkezde.</span></h2><p>Mesajlarınız, müdürlükleriniz ve kurum gündemi Turkuaz Kurumsal İletişim’de bir arada.</p>
@@ -76,7 +77,7 @@
         <header class="room-header"><div><h1 id="chat-title">Genel Alan</h1><p id="chat-topic" class="muted small"></p></div><button id="chat-details" class="participants-button"><span data-icon="users"></span><span id="chat-subtitle">Katılımcılar</span></button></header>
         <div class="timeline-wrap">
           <div class="chat-timeline" tabindex="0" aria-label="Grup mesajları ve geçmiş"><div id="message-feed" class="message-feed" role="log" aria-label="Grup mesajları" aria-live="polite" aria-relevant="additions text"></div></div>
-          <button id="jump-latest" class="latest-button" hidden>Son mesajlara git ↓</button>
+          <button id="jump-latest" class="latest-button" hidden>Son mesajlara git</button>
         </div>
         <section class="composer-card" aria-labelledby="composer-title">
           <h2 id="composer-title" class="sr-only">Mesaj yaz</h2>

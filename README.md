@@ -4,11 +4,11 @@ Turkuaz Kurumsal İletişim, kurumun yerel ağında kullanılan, **yalnızca gru
 
 Kaynak depo: https://github.com/theorkun/ulak
 
-Arayüzde Selçuklu turkuazı (`#008C95`), koyu lacivert (`#132A45`) ve altın sarısı (`#C6A04B`) kullanılır. Turkuaz işlemlerde ve seçili alanlarda, lacivert başlık ve üst menüde, altın sarısı ince çizgi ve vurgularda yer alır. Okunabilirlik için turkuaz düğmelerde koyu ton (`#007F86`) kullanılır. Giriş ekranındaki Sarıçam Belediyesi logosu [belediyenin resmî sitesinden](https://www.saricam.bel.tr/files/ui/logo2.png) alınmış ve `public/saricam-belediyesi-logo.png` dosyasıyla paketlenmiştir; yerel ağda görünmesi için internet bağlantısı gerekmez. Logo özgün dosyası, renkleri ve oranlarıyla korunur.
+Şablon [Sarıçam Belediyesi Kurumsal Kimlik Kılavuzu](https://kobigo.com.tr/saricam/upload/files/kurumsal-kimlik-kilavuzu/kurumsal-kimlik-kilavuzu_8375.pdf) esas alınarak uyarlanmıştır. Ana renkler kılavuzun 14. sayfasındaki RGB değerleridir: turkuaz `#00B2A9`, kırmızı `#C8102E`, antrasit `#4D4D4D`. Tema `public/brand-guide.css` üzerinden uygulanır. Başlıklar Cambria/Times New Roman; metinler DIN Pro/DINPro öncelikli, Cambria/Times New Roman yedeklidir. Fontlar cihazdan kullanılır; lisanslı font dosyası dağıtılmaz. Uygulama haritası ve kaynak sayfalar [BRAND-GUIDE.md](BRAND-GUIDE.md) içindedir. Giriş ekranındaki resmî belediye logosu aynı PNG dosyası ve oranlarıyla, beyaz boşluk alanı içinde korunur.
 
 ## GitHub üzerinden tarayıcı demosu
 
-Giriş arka planında Selçuklu geometrisinden esinlenen sekiz köşeli yıldız ve geçme çizgilerinden oluşan düşük yoğunluklu bir SVG deseni kullanılır. `public/selcuklu-motif.svg` yerel olarak paketlenir; internet bağlantısı gerektirmez. Desen dekoratiftir, formun arkasında kalır ve fare/klavye etkileşimini engellemez. Belediye logosuna uygulanmaz.
+Girişteki dekoratif geçme şeridi, kılavuzun 14. sayfasındaki özgün desenden alınmış `public/saricam-kurumsal-desen.png` dosyasıdır. Tema, 34–35. sayfalardaki dijital sunum örneklerine uygun turkuaz çerçeve ve açık içerik zemini kullanır. Desen etkileşimi engellemez ve ambleme uygulanmaz. Bütün görseller yerel paketlenir; internet bağlantısı gerekmez.
 
 **[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme süper admini: `orkun` · Parola: `admin`
 
@@ -36,7 +36,7 @@ Yeni gerçek kurulumun ilk yönetici hesabı süper admin olur; kullanıcı adı
 - Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
 - Yönetici rolü diğer müdürlüklerin içeriklerine otomatik erişim vermez. Yönetici, müdürlük atamalarını düzenleyebilir; oda erişimi hesabın mevcut müdürlüğüne göre belirlenir.
 
-Giriş ekranı, lacivert belediye kimliği alanı ve açık renkli form panelinden oluşur. Mobilde kimlik alanı kısalır ve form tek sütunda gösterilir. Parola alanında erişilebilir göster/gizle kontrolü vardır; form sıfırlandığında parola tekrar gizlenir. Sohbette kendi mesajlarınız sağda turkuaz, diğer personelin mesajları solda açık renkli baloncuklarda gösterilir. Mesajlar eskiden yeniye sıralanır, tarih ve okunmamış mesaj ayraçları vardır. Yazma alanı altta, grup başlığı üstte sabittir; yalnızca mesaj geçmişi kayar. Sol menü son mesajı, saatini ve okunmamış sayısını gösterir.
+Giriş ekranı, turkuaz belediye kimliği alanı ve açık renkli form panelinden oluşur. Mobilde kimlik alanı kısalır ve form tek sütunda gösterilir. Parola alanında erişilebilir göster/gizle kontrolü vardır; form sıfırlandığında parola tekrar gizlenir. Sohbette kendi mesajlarınız sağda turkuaz, diğer personelin mesajları solda açık renkli baloncuklarda gösterilir. Mesajlar eskiden yeniye sıralanır, tarih ve okunmamış mesaj ayraçları vardır. Yazma alanı altta, grup başlığı üstte sabittir; yalnızca mesaj geçmişi kayar. Sol menü son mesajı, saatini ve okunmamış sayısını gösterir.
 
 Yeni mesaj geldiğinde en alttaysanız akış ilerler; eski mesajları okuyorsanız konumunuz korunur ve son mesajlara geçiş düğmesi gösterilir. Eski mesaj yükleme düğmesi geçmişin başındadır. Arama ve alıntı bağlantıları ilgili mesaja gider. Katılımcılar alan başlığındaki düğmeden açılır. Birebir mesajlaşma kapalıdır; grup erişim yetkileri aynıdır. Okunmamış sayıları gerçek okuma kayıtlarından gelir; kişi bazlı okundu/çift tik özelliği eklenmemiştir.
 
