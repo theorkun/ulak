@@ -158,7 +158,7 @@ document.addEventListener('click',async e=>{
   try{
     if(e.target.closest('[data-close]'))closeDialogs();
     const room=e.target.closest('[data-chat]');if(room)await openRoom(Number(room.dataset.chat));
-    const locked=e.target.closest('[data-department-info]');if(locked){const dept=state.directory.find(d=>d.id===Number(locked.dataset.departmentInfo));if(dept){$('#detail-title').textContent=dept.name;$('#detail-content').innerHTML='<p class="muted">Bu müdürlüğün odası yalnızca o müdürlüğe atanmış personel tarafından kullanılabilir.</p><p class="muted small">Tüm müdürlüklerle ortak paylaşım için Kurum Meydanı’nı kullanabilirsiniz. Müdürlük atamanızı kurum yöneticiniz düzenler.</p>';dialog('#detail-dialog');}}
+    const locked=e.target.closest('[data-department-info]');if(locked){const dept=state.directory.find(d=>d.id===Number(locked.dataset.departmentInfo));if(dept){$('#detail-title').textContent=dept.name;$('#detail-content').innerHTML='<p class="muted">Bu müdürlüğün odası yalnızca o müdürlüğe atanmış personel tarafından kullanılabilir.</p><p class="muted small">Tüm müdürlüklerle ortak paylaşım için Genel Sohbet’i kullanabilirsiniz. Müdürlük atamanızı kurum yöneticiniz düzenler.</p>';dialog('#detail-dialog');}}
     if(e.target.closest('#load-older'))await older();
     const result=e.target.closest('[data-result]');if(result){closeDialogs();await openRoom(Number(result.dataset.room),Number(result.dataset.result));}
     const reply=e.target.closest('[data-reply]'),edit=e.target.closest('[data-edit]');

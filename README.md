@@ -1,6 +1,6 @@
 # Turkuaz Kurumsal İletişim — Müdürlükler için kurum iletişim alanı
 
-Turkuaz Kurumsal İletişim, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından oluşan** bir iletişim portalıdır. Kullanıcılar kullanıcı adı ve parolayla giriş yapar. Her personel kendi müdürlük odasına ve tüm kurum personelinin ortak **Kurum Meydanı** odasına erişir.
+Turkuaz Kurumsal İletişim, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından oluşan** bir iletişim portalıdır. Kullanıcılar kullanıcı adı ve parolayla giriş yapar. Her personel kendi müdürlük odasına ve tüm kurum personelinin ortak **Genel Sohbet** odasına erişir.
 
 Kaynak depo: https://github.com/theorkun/ulak
 
@@ -12,7 +12,7 @@ Girişteki dekoratif geçme şeridi, kılavuzun 14. sayfasındaki özgün desend
 
 **[Demoyu aç](https://theorkun.github.io/ulak/)** · Önizleme süper admini: `orkun` · Parola: `admin`
 
-Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Kurum Meydanı, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
+Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek sürümüdür. Örnek hesaplarla giriş, Genel Sohbet, müdürlük odaları, mesaj gönderme/düzenleme/silme/yanıtlama, arama ve personel yönetimi denenebilir. Veriler diğer ziyaretçilere gönderilmez, sayfa yenilenince sıfırlanır. Gerçek parolalar veya kurum bilgileri girmeyin. Gerçek çok kullanıcılı mesajlaşma için aşağıdaki yerel sunucu kurulumu gerekir.
 
 `node scripts/build-pages.cjs` komutu yalnızca arayüzü ve örnek verileri `docs/` klasörüne hazırlar. Tasarım değiştiğinde komutu tekrar çalıştırıp `docs/` dosyalarını da gönderin. GitHub Pages kaynağı **main /docs** olarak ayarlanır. Sunucu, veritabanı ve ortam dosyaları bu klasöre kopyalanmaz. Demo kodu kurum sunucusunun giriş sayfasına eklenmez.
 
@@ -20,7 +20,7 @@ Bu yayın, aynı arayüzün yalnızca tarayıcı belleğinde çalışan örnek s
 
 Sol menüde belediyenin [resmî müdürlükler sayfasından](https://www.saricam.bel.tr/mudurlukler) 24 Kasım 2026 tarihinde kontrol edilen **29 müdürlük** yer alır. Kayıtlar `department-catalog.cjs` içinde kaynak adresi ve kontrol tarihiyle saklanır; uygulamanın çalışması için belediye sitesine veya internete bağlantı gerekmez. Sayfada kısaltılmış “Destek Hiz.” adı açık yazımıyla kullanılmıştır.
 
-Menüde Kurum Meydanı ve kullanıcının kendi müdürlüğü doğrudan gösterilir. Diğer müdürlükler açılır bir listede toplanır; arama sırasında liste otomatik açılır. Kilit simgeli satıra tıklamak erişim açıklamasını gösterir. Paylaşımları veya personel bilgileri açılmaz. Müdürlük araması bütün dizini filtreler. Yetkiler değişmez: personel yalnızca kendi odasına ve Kurum Meydanı'na erişebilir.
+Menüde Genel Sohbet ve kullanıcının kendi müdürlüğü doğrudan gösterilir. Diğer müdürlükler açılır bir listede toplanır; arama sırasında liste otomatik açılır. Kilit simgeli satıra tıklamak erişim açıklamasını gösterir. Paylaşımları veya personel bilgileri açılmaz. Müdürlük araması bütün dizini filtreler. Yetkiler değişmez: personel yalnızca kendi odasına ve Genel Sohbet'e erişebilir.
 
 Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yönetici listeden müdürlüğü seçebilir. Önceki “İnsan Kaynakları Müdürlüğü” gibi bilinen kısa adlar, resmî ad henüz ayrı bir kayıt olarak yoksa oda geçmişi ve personel atamaları korunarak resmî ada güncellenir. Kurumun ayrıca tanımladığı özel birimler silinmez.
 
@@ -30,7 +30,7 @@ Resmî kayıtlar ilk kurulumda otomatik hazırlanır; yeni personel açarken yö
 
 Yeni gerçek kurulumun ilk yönetici hesabı süper admin olur; kullanıcı adına bakılarak otomatik yetki verilmez. Eski veritabanlarındaki hesaplar korunur ve `is_super_admin` alanı eklenirken mevcut yöneticiler otomatik yükseltilmez. Eski bir kurulumda üst yetki aktarımı gerekiyorsa kurum BT birimi yedek alıp yetkili hesabı ayrıca belirlemelidir.
 
-- **Kurum Meydanı:** Tüm müdürlüklerin aktif personeli otomatik katılır; herkes paylaşım yapabilir.
+- **Genel Sohbet:** Tüm müdürlüklerin aktif personeli otomatik katılır; herkes paylaşım yapabilir.
 - **Müdürlük odası:** Her müdürlüğün tek odası vardır. Yalnızca o müdürlüğe atanmış aktif personel okuyabilir, arayabilir ve paylaşım yapabilir.
 - **Yönetim:** Yönetici müdürlük tanımlar, personel hesabı açar, müdürlük atamasını değiştirir, hesabı pasife alır veya geçici parolayı yeniler.
 - Birebir mesajlaşma ve kullanıcıların serbest grup oluşturması sunucu API'sinde de kapalıdır.
@@ -55,7 +55,7 @@ Node.js 24 veya üzeriyle `ONIZLEME.cmd` ya da `node preview.cjs` çalıştırı
 | `demo.destek` | Destek Hizmetleri Müdürlüğü | Personel |
 | `demo.mali` | Mali Hizmetler Müdürlüğü | Personel |
 
-Her hesap Kurum Meydanı ve kendi müdürlük odasını kullanabilir. Diğer müdürlüklerin adları sol menüde kilitli olarak listelenir. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
+Her hesap Genel Sohbet ve kendi müdürlük odasını kullanabilir. Diğer müdürlüklerin adları sol menüde kilitli olarak listelenir. Örnek ortam yalnızca `127.0.0.1` adresinde çalışır; örnek hesaplar/paylaşımlar bellekte tutulur ve kapanınca silinir. Gerçek kullanıcı veritabanını kullanmaz. Bu örnek hesaplar gerçek sunucu kurulumunda oluşturulmaz.
 
 ## Gerçek kurum kurulumu
 
@@ -94,7 +94,7 @@ KVKK aydınlatma, kullanım koşulları ve çerez metinleri giriş yapmadan aç�
 1. Sunucu bilgisayarında **Node.js 24 veya üzeri** bulunmalı. SMTP kullanılacaksa yukarıdaki bağımlılık kurulumunu yapın; SMTP kapalıyken temel yerel mesajlaşma ek paket gerektirmez. Başlatma dosyaları bu bilgisayardaki Codex Node çalışma ortamını da bulabilir; başka bilgisayara taşırken Node.js kurun.
 2. `BASLAT-YEREL.cmd` çalıştırın veya `node server.cjs` kullanın.
 3. Konsoldaki ilk kurulum bağlantısını **aynı bilgisayarda** açın. Yönetici adını, müdürlüğünü, kullanıcı adını ve en az 10 karakterli kendi parolasını belirleyin.
-4. Yönetim merkezinde müdürlükleri tanımlayın. Personel hesabı açarken ilgili müdürlüğü seçin. Yeni hesap Kurum Meydanı ve kendi müdürlük odasına otomatik katılır.
+4. Yönetim merkezinde müdürlükleri tanımlayın. Personel hesabı açarken ilgili müdürlüğü seçin. Yeni hesap Genel Sohbet ve kendi müdürlük odasına otomatik katılır.
 5. Geçici parolayı personele kurumun güvenli kanalıyla iletin. İlk girişte parola değişimi zorunludur.
 6. Sunucuyu Ctrl+C ile durdurun. Yerel ağ kullanımı için `BASLAT-AG.cmd` çalıştırın. Diğer kurum bilgisayarlarından konsolda yazan `http://SUNUCU-IP:8095` adresini açın.
 
@@ -102,7 +102,7 @@ Sunucu bilgisayarı açık kalmalıdır. Güvenlik duvarı otomatik değiştiril
 
 ## Eski sürümden geçiş
 
-Önce `node backup.cjs` ile yedek alın. Aynı `data/kurumnet.db` dosyası yeni sürümde kullanılmaya devam eder. İlk açılışta mevcut personelin birim bilgilerine göre müdürlük kayıtları ve odaları oluşturulur. Eski Genel sohbet odası Kurum Meydanı'na dönüştürülür ve geçmişi korunur.
+Önce `node backup.cjs` ile yedek alın. Aynı `data/kurumnet.db` dosyası yeni sürümde kullanılmaya devam eder. İlk açılışta mevcut personelin birim bilgilerine göre müdürlük kayıtları ve odaları oluşturulur. Eski Genel sohbet odası Genel Sohbet'e dönüştürülür ve geçmişi korunur.
 
 Önceki birebir sohbetler ve serbest gruplar veritabanından silinmez; `legacy` olarak saklanır. Yeni arayüzde, mesaj API'lerinde ve aramada erişilemez. Müdürlük değişiminde eski müdürlük odasının erişimi kaldırılır, yeni müdürlüğe erişim verilir. Eski birimdeki paylaşımlar başka bir odaya taşınmaz. Değişiklikler yönetim kayıtlarına işlenir.
 
@@ -148,4 +148,4 @@ Geri yüklerken sunucuyu durdurun. Mevcut `data` klasörünü ayrıca yedekleyin
 
 `node --test tests/*.test.cjs`
 
-Testler geçici verilerle çalışır. Müdürlük erişimleri, Kurum Meydanı üyeliği, birebir mesaj engeli, müdürlük değişimi, Türkçe arama, eski şema geçişi, parola işlemleri ve 200 ayrı canlı bağlantı kapsanır. Ekran akışları ayrıca DOM ortamında kontrol edilmiştir; bu kontrol piksel düzeyinde tarayıcı görüntülemesi değildir.
+Testler geçici verilerle çalışır. Müdürlük erişimleri, Genel Sohbet üyeliği, birebir mesaj engeli, müdürlük değişimi, Türkçe arama, eski şema geçişi, parola işlemleri ve 200 ayrı canlı bağlantı kapsanır. Ekran akışları ayrıca DOM ortamında kontrol edilmiştir; bu kontrol piksel düzeyinde tarayıcı görüntülemesi değildir.

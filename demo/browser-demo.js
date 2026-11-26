@@ -23,7 +23,7 @@
   const log=(action,target)=>audit.unshift({action,target,actor:current.name,created_at:now()});
   const roomId=id=>id+1;
   const allowed=id=>id===1||id===roomId(current.departmentId);
-  const guard=id=>{if(!allowed(id))fail(403,'Yalnızca Kurum Meydanı ve kendi müdürlüğünüze erişebilirsiniz.');};
+  const guard=id=>{if(!allowed(id))fail(403,'Yalnızca Genel Sohbet ve kendi müdürlüğünüze erişebilirsiniz.');};
   const admin=()=>{if(!['admin','super_admin'].includes(current.role))fail(403,'Yönetici yetkisi gerekli.');};
   const manage=user=>{if(current.role!=='super_admin'&&user.role!=='member')fail(403,'Yönetici hesapları süper admin yetkisi gerektirir.');};
   const validText=(value,min,max,label)=>{const s=String(value||'').trim();if(s.length<min||s.length>max)fail(400,label+' uzunluğu uygun değil.');return s;};
@@ -31,10 +31,10 @@
     const m={id:nextMessage++,conversationId,senderId,body,createdAt:new Date(Date.now()-minutes*60000).toISOString(),editedAt:null,deleted:false,replyTo:null,...extra};messages.push(m);return m;
   }
   function message(m){const reply=messages.find(r=>r.id===m.replyTo);return {...m,sender:publicUser(people.find(p=>p.id===m.senderId)),reply:reply?{id:reply.id,name:people.find(p=>p.id===reply.senderId).name,body:reply.deleted?'Bu paylaşım kaldırıldı.':reply.body}:null};}
-  function room(id){const general=id===1,d=departments.find(d=>roomId(d.id)===id),latest=messages.filter(m=>m.conversationId===id).at(-1);return{id,lastMessage:latest?message(latest):null,title:general?'Kurum Meydanı':d.name,scope:general?'general':'department',topic:general?'Tüm kurum personeli':'Müdürlük personeli',people:people.filter(p=>p.active&&(general||p.departmentId===d.id)).map(publicUser),unread:messages.filter(m=>m.conversationId===id&&m.id>(reads.get(current.id+':'+id)||0)&&m.senderId!==current.id&&!m.deleted).length};}
+  function room(id){const general=id===1,d=departments.find(d=>roomId(d.id)===id),latest=messages.filter(m=>m.conversationId===id).at(-1);return{id,lastMessage:latest?message(latest):null,title:general?'Genel Sohbet':d.name,scope:general?'general':'department',topic:general?'Tüm kurum personeli':'Müdürlük personeli',people:people.filter(p=>p.active&&(general||p.departmentId===d.id)).map(publicUser),unread:messages.filter(m=>m.conversationId===id&&m.id>(reads.get(current.id+':'+id)||0)&&m.senderId!==current.id&&!m.deleted).length};}
   post(1,2,'Günaydın. Yeni dönem oryantasyon programı için müdürlüklerin personel listelerini cuma gününe kadar tamamlıyoruz.',85);
   post(1,3,'Toplantı salonlarının haftalık kullanım planı güncellendi. Taleplerinizi müdürlüğünüz üzerinden iletebilirsiniz.',65);
-  post(1,1,'Kurum içi iletişim alanımıza hoş geldiniz. Kurum Meydanı tüm müdürlüklerin ortak gündemi, müdürlük odaları ise kendi ekiplerimizin koordinasyonu için hazır.',42);
+  post(1,1,'Kurum içi iletişim alanımıza hoş geldiniz. Genel Sohbet tüm müdürlüklerin ortak gündemi, müdürlük odaları ise kendi ekiplerimizin koordinasyonu için hazır.',42);
   post(1,4,'Haftalık faaliyet özetlerini ortak takvime göre tamamlıyoruz.',24);
   post(1,2,'Yarın saat 10.30’da kurum içi bilgilendirme toplantısı yapılacak. Tüm müdürlüklerin temsilcilerini bekliyoruz.',8);
   for(const [senderId,body] of [[5,'Sunucu bakım kontrollerini tamamladım. Destek taleplerini burada koordine edebiliriz.'],[1,'Teşekkürler. Bugünkü test sonuçlarını burada paylaşalım.'],[6,'Yeni başlayan personelin oryantasyon dosyaları hazır.'],[2,'Personel listeleri son halini alınca birlikte gözden geçirelim.'],[7,'Toplantı salonu hazırlıklarını bitirdik.'],[4,'Müdürlük içi bütçe değerlendirmesinin gündemini bu alanda toparlayalım.']])post(roomId(people.find(p=>p.id===senderId).departmentId),senderId,body,15);

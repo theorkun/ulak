@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#00b2a9">
   <title>Turkuaz Kurumsal İletişim · Kurum İletişim Alanı</title>
-  <link rel="icon" href="icon.svg?v=22">
-  <link rel="stylesheet" href="fonts.css?v=22">
-  <link rel="stylesheet" href="style.css?v=22">
-  <link rel="stylesheet" href="brand-guide.css?v=22">
-  <script src="app.js?v=22" defer></script>
-  <script src="auth.js?v=22" defer></script>
+  <link rel="icon" href="icon.svg?v=23">
+  <link rel="stylesheet" href="fonts.css?v=23">
+  <link rel="stylesheet" href="style.css?v=23">
+  <link rel="stylesheet" href="brand-guide.css?v=23">
+  <script src="app.js?v=23" defer></script>
+  <script src="auth.js?v=23" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -31,7 +31,7 @@
               <circle class="network-dot" cx="77" cy="40" r="3"/><circle class="network-dot" cx="203" cy="40" r="3"/>
             </svg>
           </div>
-          <div class="auth-intro-footer"><span class="auth-intro-mark" aria-hidden="true"></span><span>Kurum Meydanı <span aria-hidden="true">·</span> Müdürlük odaları</span></div>
+          <div class="auth-intro-footer"><span class="auth-intro-mark" aria-hidden="true"></span><span>Genel Sohbet <span aria-hidden="true">·</span> Müdürlük odaları</span></div>
           <div class="auth-ornament" aria-hidden="true"><span></span><span></span><span></span></div>
         </aside>
         <div class="auth-card">
@@ -69,12 +69,12 @@
     <aside class="sidebar">
       <div class="sidebar-heading"><h2>Alanlar</h2><span id="room-count"></span></div>
       <label class="room-filter"><span data-icon="search"></span><input id="chat-filter" placeholder="Müdürlük bul…" aria-label="Alanları filtrele"></label>
-      <nav id="conversation-list" class="room-list" aria-label="Kurum Meydanı ve müdürlükler"></nav>
+      <nav id="conversation-list" class="room-list" aria-label="Genel Sohbet ve müdürlükler"></nav>
       <div class="sidebar-tools"><button id="admin-open" class="sidebar-action" hidden><span data-icon="settings"></span>Yönetim</button><div class="sidebar-footer"><span id="connection-dot" class="connection-dot"></span><span id="connection-text" role="status">Bağlanıyor…</span><button id="refresh" class="icon-button" aria-label="Yenile" title="Yenile" data-icon="refresh"></button></div></div>
     </aside>
     <main class="main-area">
       <section id="chat-section" class="room-section" hidden>
-        <header class="room-header"><div><h1 id="chat-title">Kurum Meydanı</h1><p id="chat-topic" class="muted small"></p></div><button id="chat-details" class="participants-button"><span data-icon="users"></span><span id="chat-subtitle">Katılımcılar</span></button></header>
+        <header class="room-header"><div><h1 id="chat-title">Genel Sohbet</h1><p id="chat-topic" class="muted small"></p></div><button id="chat-details" class="participants-button"><span data-icon="users"></span><span id="chat-subtitle">Katılımcılar</span></button></header>
         <div class="timeline-wrap">
           <div class="chat-timeline" tabindex="0" aria-label="Grup mesajları ve geçmiş"><div id="message-feed" class="message-feed" role="log" aria-label="Grup mesajları" aria-live="polite" aria-relevant="additions text"></div></div>
           <button id="jump-latest" class="latest-button" hidden>Son mesajlara git</button>
@@ -86,14 +86,14 @@
           <div class="composer-status"><span id="message-length">0 / 4000</span><span class="keyboard-hint">Enter ile gönder · Shift + Enter ile yeni satır</span></div>
         </section>
       </section>
-      <section id="welcome" class="empty-workspace"><h2>Bir alan seçin</h2><p class="muted">Kurum Meydanı veya kendi müdürlüğünüzle devam edin.</p></section>
+      <section id="welcome" class="empty-workspace"><h2>Bir alan seçin</h2><p class="muted">Genel Sohbet veya kendi müdürlüğünüzle devam edin.</p></section>
     </main>
   </div>
 
   <dialog id="search-dialog" aria-labelledby="search-title">
     <div class="dialog-head"><h2 id="search-title">Mesaj ara</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
     <form id="search-form" class="inline-form"><label class="sr-only" for="message-search">Aranacak metin</label><input id="message-search" required minlength="2" maxlength="100" placeholder="En az 2 karakter…"><button class="button primary" type="submit">Ara</button></form>
-    <p class="muted small">Kurum Meydanı ve kendi müdürlüğünüzde arama yapılır.</p><div id="search-results" class="search-results" aria-live="polite"></div>
+    <p class="muted small">Genel Sohbet ve kendi müdürlüğünüzde arama yapılır.</p><div id="search-results" class="search-results" aria-live="polite"></div>
   </dialog>
   <dialog id="profile-dialog" aria-labelledby="profile-title">
     <div class="dialog-head"><h2 id="profile-title">Parola değiştir</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
@@ -137,14 +137,14 @@
       <h3>Veri sorumlusu ve kapsam</h3><p>Turkuaz Kurumsal İletişim kurum içi iletişim sisteminin veri sorumlusu Sarıçam Belediyesidir. Bu taslak; personel hesabı, müdürlük grupları, oturum güvenliği ve parola yenileme süreçleri hakkında bilgilendirme amacıyla hazırlanmıştır.</p>
       <h3>İşlenen veriler ve amaçlar</h3><ul><li>Ad soyad, kullanıcı adı, müdürlük ve görev yetkisi: hesap oluşturma, personeli ilgili gruplara atama ve erişim kontrolü.</li><li>Grup mesajları, yanıtlar ve işlem tarihleri: kurum içi iletişim ve koordinasyon.</li><li>Parola özeti, oturum kayıtları ve yönetim işlem kayıtları: kimlik doğrulama ve bilgi güvenliği. Parola açık metin olarak saklanmaz.</li><li>Yönetici tarafından kaydedilen e-posta: talep üzerine tek kullanımlık parola yenileme kodunun iletilmesi. Bu bilgiler grup katılımcılarına gösterilmez.</li><li>Bağlantı adresi ve başarısız deneme sayaçları: kötüye kullanımın sınırlandırılması. Uygulamanın bu sayaçları geçici bellekte tutulur; kurum ağ altyapısı ayrıca erişim kaydı oluşturabilir.</li></ul>
       <h3>Toplama yöntemi ve hukuki sebep</h3><p>Veriler yetkili yöneticilerin personel kaydı oluşturması, kullanıcıların mesaj ve formları doldurması ve sistemin oturum işlemleri yoluyla elektronik ortamda elde edilir. Her amaç için uygulanacak 6698 sayılı Kanun'un 5. maddesindeki işleme şartı; kurumun hukuki yükümlülükleri ve istihdam ilişkisi değerlendirilerek belediyece belirlenmelidir. Bu bilgilendirme açık rıza talebi değildir.</p>
-      <h3>Erişim ve aktarım</h3><p>Kurum Meydanı mesajları tüm aktif personele, müdürlük mesajları ilgili müdürlük personeline açılır. Yetkili teknik personel sistem işletimi ve güvenliği kapsamında erişebilir. Yasal zorunluluk hâlinde yetkili kamu kurumlarına aktarım yapılabilir. E-posta entegrasyonu etkinleştirildiğinde seçili iletişim bilgisi ve doğrulama mesajı ilgili hizmet sağlayıcıya iletilir. Sağlayıcının kimliği, veri işleme koşulları ve varsa yurt dışı aktarım mekanizması devreye almadan önce bu metinde açıklanmalıdır.</p>
+      <h3>Erişim ve aktarım</h3><p>Genel Sohbet mesajları tüm aktif personele, müdürlük mesajları ilgili müdürlük personeline açılır. Yetkili teknik personel sistem işletimi ve güvenliği kapsamında erişebilir. Yasal zorunluluk hâlinde yetkili kamu kurumlarına aktarım yapılabilir. E-posta entegrasyonu etkinleştirildiğinde seçili iletişim bilgisi ve doğrulama mesajı ilgili hizmet sağlayıcıya iletilir. Sağlayıcının kimliği, veri işleme koşulları ve varsa yurt dışı aktarım mekanizması devreye almadan önce bu metinde açıklanmalıdır.</p>
       <h3>Saklama ve silme</h3><p>Doğrulama kodu 10 dakika geçerlidir, en fazla 5 kez denenebilir ve başarılı kullanımda iptal edilir. Süresi geçmiş yenileme kayıtları sonraki kod talebinde temizlenir. Personel, mesaj, işlem ve yedek kayıtları için saklama ve imha takvimi belediyece belirlenmelidir; bu sürümde bu kayıtlar için otomatik süreli imha uygulanmaz.</p>
       <h3>Haklarınız ve başvuru</h3><p>Kanun'un 11. maddesi kapsamında verilerinizin işlenip işlenmediğini ve amacına uygun kullanımını öğrenme, aktarıldığı tarafları bilme, düzeltme veya şartları oluştuğunda silme/yok etme ve bu işlemlerin alıcılara bildirilmesini isteme, otomatik analiz sonucu aleyhinize sonuçlara itiraz etme ve hukuka aykırı işleme nedeniyle zararın giderilmesini isteme haklarınız bulunur. Başvurular için belediyenin resmî iletişim kanallarına başvurabilirsiniz; Turkuaz Kurumsal İletişim’e özgü yetkili başvuru kanalı kurumca teyit edilmelidir.</p>
       <p><a href="https://www.saricam.bel.tr/iletisim" target="_blank" rel="noopener noreferrer">Belediyenin resmî iletişim sayfası</a> · <a href="https://www.kvkk.gov.tr/Icerik/2033/Aydinlatma-Yukumlulugu-" target="_blank" rel="noopener noreferrer">KVKK aydınlatma yükümlülüğü</a></p>
       <p class="notice small">GitHub demosu: yalnızca tarayıcı belleğinde çalışır. Girdiğiniz veriler başka ziyaretçilere gönderilmez; yenilemede silinir. GitHub Pages barındırma hizmeti kendi erişim kayıtlarını tutabilir. Gerçek kurum bilgilerini veya gerçek parolalarınızı bu demoya girmeyin.</p>
     </article>
     <article data-legal-content="terms" hidden>
-      <p class="notice small">Kurum incelemesine sunulan kullanım koşulları taslağıdır.</p><h3>Yetkili kullanım</h3><p>Turkuaz Kurumsal İletişim, belediye personelinin görevleri kapsamında kurum içi grup iletişimi içindir. Hesabınızı ve doğrulama kodlarınızı paylaşmayın. Başkasının hesabını kullanmayın; güvenlik şüphesini Bilgi İşlem Müdürlüğüne bildirin.</p><h3>İçerik ve gizlilik</h3><p>Yalnızca görevle ilgili ve paylaşım yetkiniz bulunan bilgileri gönderin. Gereksiz kişisel veri, özel nitelikli kişisel veri veya gizli belge paylaşmayın. Kurum Meydanı'ndaki mesajların tüm personele, müdürlük mesajlarının ilgili müdürlüğe açık olduğunu gözetin.</p><h3>Hesap ve erişim</h3><p>Personel hesaplarını ve müdürlük atamalarını kurum yöneticisi düzenler. Şifre yenileme yalnızca kurum kayıtlarındaki iletişim bilgileri üzerinden yapılır. Uygulamadaki mesajlar resmî evrak veya tebligat süreçlerinin yerine geçmez.</p><h3>Destek</h3><p>Hesap, erişim ve iletişim bilgisi güncellemeleri için Bilgi İşlem Müdürlüğüne başvurun. Güvenlik ve bakım çalışmaları sırasında hizmete geçici ara verilebilir.</p>
+      <p class="notice small">Kurum incelemesine sunulan kullanım koşulları taslağıdır.</p><h3>Yetkili kullanım</h3><p>Turkuaz Kurumsal İletişim, belediye personelinin görevleri kapsamında kurum içi grup iletişimi içindir. Hesabınızı ve doğrulama kodlarınızı paylaşmayın. Başkasının hesabını kullanmayın; güvenlik şüphesini Bilgi İşlem Müdürlüğüne bildirin.</p><h3>İçerik ve gizlilik</h3><p>Yalnızca görevle ilgili ve paylaşım yetkiniz bulunan bilgileri gönderin. Gereksiz kişisel veri, özel nitelikli kişisel veri veya gizli belge paylaşmayın. Genel Sohbet'teki mesajların tüm personele, müdürlük mesajlarının ilgili müdürlüğe açık olduğunu gözetin.</p><h3>Hesap ve erişim</h3><p>Personel hesaplarını ve müdürlük atamalarını kurum yöneticisi düzenler. Şifre yenileme yalnızca kurum kayıtlarındaki iletişim bilgileri üzerinden yapılır. Uygulamadaki mesajlar resmî evrak veya tebligat süreçlerinin yerine geçmez.</p><h3>Destek</h3><p>Hesap, erişim ve iletişim bilgisi güncellemeleri için Bilgi İşlem Müdürlüğüne başvurun. Güvenlik ve bakım çalışmaları sırasında hizmete geçici ara verilebilir.</p>
     </article>
     <article data-legal-content="cookies" hidden>
       <h3>Kurum sunucusunda oturum çerezi</h3><p><code>kn_session</code> çerezi giriş yaptıktan sonra oturumunuzu tanımak için kullanılır. Varsayılan ömrü 12 saattir; sunucu ayarıyla değişebilir. HttpOnly ve SameSite=Strict nitelikleri kullanılır; HTTPS ile güvenli çerez ayarı etkinleştirilmelidir. Çıkış yaptığınızda oturum çerezi temizlenir.</p><h3>İsteğe bağlı çerezler</h3><p>Turkuaz Kurumsal İletişim uygulama kodunda reklam, pazarlama veya analitik çerezleri bulunmaz. Bu nedenle bu sürümde isteğe bağlı çerez tercihi istenmez. Sonradan eklenen hizmetler için metin ve tercih mekanizması yeniden değerlendirilmelidir.</p><h3>GitHub demosu</h3><p>Demo sürümünün Turkuaz Kurumsal İletişim kodu oturum çerezi, localStorage veya kalıcı kullanıcı kaydı oluşturmaz. Ekrandaki işlemler sayfa belleğinde tutulur ve yenilemede silinir. Barındırma platformunun teknik işlemleri kendi politikalarına tabidir.</p>

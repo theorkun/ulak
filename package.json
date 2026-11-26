@@ -2,7 +2,7 @@
   "name": "ulak-kurum-iletisim",
   "version": "2.0.0",
   "private": true,
-  "description": "Yerel ağ için müdürlük odaları ve tüm personelin erişebildiği Kurum Meydanı",
+  "description": "Yerel ağ için müdürlük odaları ve tüm personelin erişebildiği Genel Sohbet",
   "engines": {
     "node": ">=24.0.0"
   },
