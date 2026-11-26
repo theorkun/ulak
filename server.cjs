@@ -9,6 +9,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { createRooms } = require('./rooms.cjs');
 const { createRecovery, contacts } = require('./recovery.cjs');
 const collaboration = require('./collaboration.cjs');
+const UploadLimits=require('./public/upload-limits.js');
 const scrypt = promisify(crypto.scrypt);
 const fold = value => String(value).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
@@ -113,6 +114,25 @@ function createChat(options = {}) {
   const admin = user => { if (user.role !== 'admin') fail(403, 'Bu işlem yönetici yetkisi gerektirir.'); };
   const manageUser = (actor,target) => {if(!actor.is_super_admin&&(target.role==='admin'||target.is_super_admin))fail(403,'Yönetici hesaplarını yalnızca süper admin düzenleyebilir.');};
   const recovery=createRecovery({db,options,limited,passwordHash,audit,transaction,endSessions:id=>{for(const c of clients)if(c.userId===id)c.res.end();}});
+  function saveMessage(user,id,input,attachment,req){
+        limited(`send:${user.id}`,60,60000);const content=text(input.body,1,4000,'Mesaj'),clientId=text(input.clientId,8,80,'İstek kimliği');
+        session(req);member(user.id,id);
+        if(attachment)limited(`upload:${user.id}`,10,60000);
+        if(input.announcement&&!['admin','super_admin'].includes(userRole(user)))fail(403,'Duyuru için yönetici yetkisi gerekli.');
+        const duplicate = db.prepare('SELECT id,conversation_id FROM messages WHERE sender_id=? AND client_id=?').get(user.id, clientId);
+        if (duplicate) { if (duplicate.conversation_id !== id) fail(409, 'İstek kimliği daha önce kullanıldı.'); return {status:200,id:duplicate.id}; }
+        if(attachment){const usage=db.prepare('SELECT coalesce(sum(length(a.bytes)),0) total,coalesce(sum(CASE WHEN m.sender_id=? THEN length(a.bytes) ELSE 0 END),0) personal FROM attachments a JOIN messages m ON m.id=a.message_id').get(user.id);if(usage.personal+attachment.bytes.length>UploadLimits.personalBytes||usage.total+attachment.bytes.length>UploadLimits.totalBytes)fail(413,'Dosya depolama sınırı dolu. Kurum yöneticisine başvurun.');}
+        const reply = input.replyTo == null ? null : Number(input.replyTo);
+        if (reply !== null && (!Number.isSafeInteger(reply) || reply <= 0)) fail(400, 'Geçersiz yanıt mesajı.');
+        if (reply && !db.prepare('SELECT id FROM messages WHERE id=? AND conversation_id=?').get(reply, id)) fail(400, 'Yanıtlanan mesaj bu sohbette bulunamadı.');
+        const messageId = transaction(() => {
+          const mid = Number(db.prepare('INSERT INTO messages(conversation_id,sender_id,body,client_id,reply_to) VALUES(?,?,?,?,?)').run(id, user.id, content, clientId, reply).lastInsertRowid);
+          if(attachment)db.prepare('INSERT INTO attachments(message_id,name,type,bytes) VALUES(?,?,?,?)').run(mid,attachment.name,attachment.type,attachment.bytes);
+          if(input.announcement)db.prepare('UPDATE messages SET announcement=1 WHERE id=?').run(mid);
+          db.prepare('UPDATE members SET last_read=? WHERE conversation_id=? AND user_id=?').run(mid, id, user.id); return mid;
+        }); event({ kind: 'message', conversationId: id }, id); return {status:201,id:messageId};
+  }
+  const largeUpload=require('./large-upload.cjs')({fail,session,member,limited,saveMessage,decodeBinary:collaboration.decodeBinary,json});
   const collaborationRoute=collaboration.createCollaboration({db,body,session,member,json,fail,event,audit,limited,clients,publicUser});
   const staffImport=require('./staff-import.cjs')({db,body,session,admin,fail,text,contacts,passwordHash,transaction,rooms,publicUser,audit,event,json});
   async function handle(req, res) {
@@ -181,6 +201,7 @@ function createChat(options = {}) {
         return json(res, 200, { ok: true, csrf: issueSession(res, user.id, req), user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(user.id)) });
       }
       if (user.must_change) fail(428, 'Devam etmeden önce geçici parolanızı değiştirin.');
+      const fileRoute=route.match(/^\/api\/conversations\/(\d+)\/file-message$/);if(fileRoute&&req.method==='POST')return largeUpload(req,res,user,Number(fileRoute[1]));
       if(await collaborationRoute(req,res,url,user))return;
       if(route==='/api/admin/import'&&req.method==='POST'){limited('import:'+user.id,4,60000);return staffImport(req,res,user);}
       if (route === '/api/users' && req.method === 'GET') {
@@ -286,24 +307,8 @@ function createChat(options = {}) {
         return json(res, 200, { messages: rows.map(row=>messageRow({...row,viewer_id:user.id})), hasMore: rows.length ? !!db.prepare('SELECT id FROM messages m WHERE conversation_id=? AND id<? AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=m.id AND h.user_id=?) LIMIT 1').get(id, rows[0].id,user.id) : false });
       }
       if (match && req.method === 'POST') {
-        const id = Number(match[1]); member(user.id, id); limited(`send:${user.id}`, 60, 60000);
-        const input = await body(req,2900000), content = text(input.body, 1, 4000, 'Mesaj'), clientId = text(input.clientId, 8, 80, 'İstek kimliği');
-        session(req);member(user.id,id);
-        const attachment=input.attachment?collaboration.decodeFile(input.attachment):null;
-        if(attachment)limited(`upload:${user.id}`,10,60000);
-        if(input.announcement&&!['admin','super_admin'].includes(userRole(user)))fail(403,'Duyuru için yönetici yetkisi gerekli.');
-        const duplicate = db.prepare('SELECT id,conversation_id FROM messages WHERE sender_id=? AND client_id=?').get(user.id, clientId);
-        if (duplicate) { if (duplicate.conversation_id !== id) fail(409, 'İstek kimliği daha önce kullanıldı.'); return json(res, 200, { id: duplicate.id }); }
-        if(attachment){const usage=db.prepare('SELECT coalesce(sum(length(a.bytes)),0) total,coalesce(sum(CASE WHEN m.sender_id=? THEN length(a.bytes) ELSE 0 END),0) personal FROM attachments a JOIN messages m ON m.id=a.message_id').get(user.id);if(usage.personal+attachment.bytes.length>100*1024*1024||usage.total+attachment.bytes.length>1024*1024*1024)fail(413,'Dosya depolama sınırı dolu. Kurum yöneticisine başvurun.');}
-        const reply = input.replyTo == null ? null : Number(input.replyTo);
-        if (reply !== null && (!Number.isSafeInteger(reply) || reply <= 0)) fail(400, 'Geçersiz yanıt mesajı.');
-        if (reply && !db.prepare('SELECT id FROM messages WHERE id=? AND conversation_id=?').get(reply, id)) fail(400, 'Yanıtlanan mesaj bu sohbette bulunamadı.');
-        const messageId = transaction(() => {
-          const mid = Number(db.prepare('INSERT INTO messages(conversation_id,sender_id,body,client_id,reply_to) VALUES(?,?,?,?,?)').run(id, user.id, content, clientId, reply).lastInsertRowid);
-          if(attachment)db.prepare('INSERT INTO attachments(message_id,name,type,bytes) VALUES(?,?,?,?)').run(mid,attachment.name,attachment.type,attachment.bytes);
-          if(input.announcement)db.prepare('UPDATE messages SET announcement=1 WHERE id=?').run(mid);
-          db.prepare('UPDATE members SET last_read=? WHERE conversation_id=? AND user_id=?').run(mid, id, user.id); return mid;
-        }); event({ kind: 'message', conversationId: id }, id); return json(res, 201, { id: messageId });
+        const id = Number(match[1]); member(user.id, id);
+        const input=await body(req,UploadLimits.legacyJsonBytes),attachment=input.attachment?collaboration.decodeFile(input.attachment):null;const result=saveMessage(user,id,input,attachment,req);return json(res,result.status,{id:result.id});
       }
       match = route.match(/^\/api\/conversations\/(\d+)\/read$/);
       if (match && req.method === 'POST') {
@@ -349,11 +354,12 @@ function createChat(options = {}) {
     files['/collaboration.js']=['collaboration.js','text/javascript'];
     files['/collaboration.css']=['collaboration.css','text/css'];
     files['/file-preview.js']=['file-preview.js','text/javascript'];files['/file-preview.css']=['file-preview.css','text/css'];files['/office-preview-worker.js']=['office-preview-worker.js','text/javascript'];
+    files['/upload-limits.js']=['upload-limits.js','text/javascript'];files['/photo-preview-worker.js']=['photo-preview-worker.js','text/javascript'];
     for(const asset of require('./preview-assets.json').files){const extension=path.extname(asset.path);files['/'+asset.path]=[asset.path,extension==='.mjs'||extension==='.js'?'text/javascript':extension==='.txt'||extension===''?'text/plain':extension==='.ttf'?'font/ttf':'application/octet-stream'];}
     files['/fonts.css']=['fonts.css','text/css'];
     for(const name of require('./font-assets.cjs'))files['/fonts/'+name]=['fonts/'+name,name.endsWith('.woff2')?'font/woff2':'text/plain'];
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
-    if(route==='/office-preview-worker.js')res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; connect-src 'none'");
+    if(['/office-preview-worker.js','/photo-preview-worker.js'].includes(route))res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; connect-src 'none'");
     const contentType=file[1].startsWith('text/')||file[1]==='image/svg+xml'?`${file[1]}; charset=utf-8`:file[1];
     res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-cache' });
     if (req.method === 'HEAD') res.end(); else res.end(fs.readFileSync(path.join(__dirname, 'public', file[0])));
@@ -364,7 +370,7 @@ function createChat(options = {}) {
     json(res, error.status || 500, { error: error.status ? error.message : 'İşlem tamamlanamadı. Yeniden deneyin.' });
   });
   const server = options.tls ? https.createServer(options.tls, listener) : http.createServer(listener);
-  server.requestTimeout = 15000; server.headersTimeout = 10000; server.keepAliveTimeout = 5000;
+  server.requestTimeout = 120000; server.headersTimeout = 10000; server.keepAliveTimeout = 5000;
   const cleanup = setInterval(() => { db.prepare('DELETE FROM sessions WHERE expires<?').run(now()); for (const [key, value] of limits) if (value.until < now()) limits.delete(key); }, 60000);
   cleanup.unref();
   const close = async () => { clearInterval(cleanup); for (const c of clients) c.res.end(); await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }); db.close(); };

@@ -15,7 +15,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
     ['demo.teknik','Can Aksoy','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
   ].map(([username,name,department,role],i)=>({id:i+1,username,name,department,departmentId:departments.find(d=>d.name===department).id,role,active:true,mustChangePassword:false,password:username==='orkun'?'admin':password}));
-  const messages=[],audit=[],reads=new Map(),hidden=new Set(),acks=new Set();let current=null,nextMessage=1;
+  const messages=[],audit=[],reads=new Map(),hidden=new Set(),acks=new Set(),fileUrls=new Set();let current=null,nextMessage=1;
   const now=()=>new Date().toISOString();
   const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
   const fold=s=>String(s).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
@@ -40,7 +40,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
   post(1,4,'Haftalık faaliyet özetlerini ortak takvime göre tamamlıyoruz.',24);
   post(1,2,'Yarın saat 10.30’da kurum içi bilgilendirme toplantısı yapılacak. Tüm müdürlüklerin temsilcilerini bekliyoruz.',8);
   for(const [senderId,body] of [[5,'Sunucu bakım kontrollerini tamamladım. Destek taleplerini burada koordine edebiliriz.'],[1,'Teşekkürler. Bugünkü test sonuçlarını burada paylaşalım.'],[6,'Yeni başlayan personelin oryantasyon dosyaları hazır.'],[2,'Personel listeleri son halini alınca birlikte gözden geçirelim.'],[7,'Toplantı salonu hazırlıklarını bitirdik.'],[4,'Müdürlük içi bütçe değerlendirmesinin gündemini bu alanda toparlayalım.']])post(roomId(people.find(p=>p.id===senderId).departmentId),senderId,body,15);
-  window.ULAK_DEMO={async request(route,input,method){
+  window.ULAK_DEMO={isAttachmentUrl:url=>fileUrls.has(url),async request(route,input,method){
     const verb=method||(input?'POST':'GET');
     const url=new URL(route,'https://demo.invalid'),path=url.pathname;input=input||{};
     if(path==='/api/status')return{setupRequired:false,preview:true,browserDemo:true,recoveryChannels:{email:false}};
@@ -72,6 +72,14 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
       if(action==='receipts'&&verb==='GET')return{people:people.filter(p=>acks.has(p.id+':'+m.id)).map(p=>({name:p.name,created_at:m.createdAt}))};fail(405,'Yöntem desteklenmiyor.');
     }
     if(path==='/api/directory')return{departments:departments.map(d=>({...d,accessible:d.id===current.departmentId}))};
+    const binary=path.match(/^\/api\/conversations\/(\d+)\/file-message$/);
+    if(binary&&verb==='POST'){
+      const id=Number(binary[1]);guard(id);const file=input.file,info=input.attachment;
+      if(!file||typeof file.slice!=='function'||!file.size||file.size>100*1024*1024||!info?.name||!['application/pdf','text/plain','image/png','image/jpeg','image/heic','image/heif','image/x-adobe-dng','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(info.type))fail(400,'Geçersiz dosya veya boyut; en fazla 100 MB.');
+      const body=validText(input.body,1,4000,'Mesaj');if(input.announcement)admin();if(input.replyTo&&!messages.some(m=>m.id===input.replyTo&&m.conversationId===id&&!m.deleted))fail(400,'Yanıtlanan mesaj bulunamadı.');
+      const duplicate=messages.find(m=>m.senderId===current.id&&m.clientId===input.clientId&&m.conversationId===id);if(duplicate)return{id:duplicate.id};
+      const url=URL.createObjectURL(file);fileUrls.add(url);const m=post(id,current.id,body,0,{clientId:input.clientId,replyTo:input.replyTo||null,announcement:!!input.announcement,attachment:{name:info.name,type:info.type,size:file.size,url}});return{id:m.id};
+    }
     if(path==='/api/conversations'&&verb==='GET')return{conversations:[room(1),room(roomId(current.departmentId))]};
     let match=path.match(/^\/api\/conversations\/(\d+)\/(messages|read)$/);
     if(match){
@@ -82,7 +90,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
         const duplicate=messages.find(m=>m.senderId===current.id&&m.clientId===input.clientId&&m.conversationId===id);if(duplicate)return{message:message(duplicate)};
         if(input.replyTo&&!messages.some(m=>m.id===input.replyTo&&m.conversationId===id&&!m.deleted))fail(400,'Yanıtlanan mesaj bulunamadı.');
         if(input.announcement)admin();
-        let attachment=null;if(input.attachment){const f=input.attachment;if(typeof f.name!=='string'||!/^data:(application\/pdf|text\/plain|image\/(png|jpeg)|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet));base64,[A-Za-z0-9+/]+={0,2}$/.test(f.data||'')||f.data.length>2800000)fail(400,'Geçersiz dosya veya boyut.');attachment={name:f.name,type:f.data.slice(5,f.data.indexOf(';')),size:Math.floor(f.data.split(',')[1].length*3/4),url:f.data};}
+        let attachment=null;if(input.attachment){const f=input.attachment;if(typeof f.name!=='string'||!/^data:(application\/pdf|text\/plain|image\/(png|jpeg|heic|heif|x-adobe-dng)|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet));base64,[A-Za-z0-9+/]+={0,2}$/.test(f.data||'')||f.data.length>2800000)fail(400,'Geçersiz dosya veya boyut.');attachment={name:f.name,type:f.data.slice(5,f.data.indexOf(';')),size:Math.floor(f.data.split(',')[1].length*3/4),url:f.data};}
         return{message:message(post(id,current.id,body,0,{clientId:input.clientId,replyTo:input.replyTo||null,attachment,announcement:!!input.announcement}))};
       }
       let rows=messages.filter(m=>m.conversationId===id&&visible(m));const before=Number(url.searchParams.get('before')),around=Number(url.searchParams.get('around'));
@@ -91,7 +99,7 @@ window.ULAK_DEMO_DEPARTMENTS=["Afet İşleri ve Risk Yönetimi Müdürlüğü","
       return{messages:rows.slice(-50).map(message),hasMore:rows.length>50};
     }
     match=path.match(/^\/api\/messages\/(\d+)$/);
-    if(match){const m=messages.find(m=>m.id===Number(match[1]));if(!m||m.deleted)fail(404,'Mesaj bulunamadı.');guard(m.conversationId);if(m.senderId!==current.id)fail(403,'Yalnızca kendi mesajınızı düzenleyebilirsiniz.');if(verb==='DELETE'){m.deleted=true;m.body='';m.attachment=null;m.pinned=false;log('message_recalled',m.id);}else if(verb==='PATCH'){m.body=validText(input.body,1,4000,'Mesaj');m.editedAt=now();}else fail(405,'İşlem desteklenmiyor.');return{message:message(m)};}
+    if(match){const m=messages.find(m=>m.id===Number(match[1]));if(!m||m.deleted)fail(404,'Mesaj bulunamadı.');guard(m.conversationId);if(m.senderId!==current.id)fail(403,'Yalnızca kendi mesajınızı düzenleyebilirsiniz.');if(verb==='DELETE'){m.deleted=true;m.body='';if(fileUrls.has(m.attachment?.url)){URL.revokeObjectURL(m.attachment.url);fileUrls.delete(m.attachment.url);}m.attachment=null;m.pinned=false;log('message_recalled',m.id);}else if(verb==='PATCH'){m.body=validText(input.body,1,4000,'Mesaj');m.editedAt=now();}else fail(405,'İşlem desteklenmiyor.');return{message:message(m)};}
     if(path==='/api/search'){const q=fold(validText(url.searchParams.get('q'),2,100,'Arama'));let rows=messages.filter(m=>allowed(m.conversationId)&&visible(m)&&!m.deleted&&fold(m.body).includes(q));const p=url.searchParams;rows=rows.filter(m=>(!p.get('room')||m.conversationId===Number(p.get('room')))&&(!p.get('sender')||m.senderId===Number(p.get('sender')))&&(!p.get('from')||m.createdAt.slice(0,10)>=p.get('from'))&&(!p.get('to')||m.createdAt.slice(0,10)<=p.get('to'))&&(p.get('files')!=='1'||m.attachment)&&(!p.get('before')||m.id<Number(p.get('before')))).reverse();return{messages:rows.slice(0,60).map(message),hasMore:rows.length>60};}
     if(path.startsWith('/api/admin/')){
       admin();

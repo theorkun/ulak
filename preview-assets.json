@@ -12,9 +12,22 @@
     "sheetjs": {
       "version": "0.20.3",
       "url": "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js"
+    },
+    "libheif": {
+      "version": "1.23.5",
+      "url": "https://registry.npmjs.org/libheif-js/-/libheif-js-1.23.5.tgz",
+      "source": "https://github.com/catdad-experiments/libheif-js"
     }
   },
   "files": [
+    {
+      "path": "vendor/preview/Libheif-LGPL.txt",
+      "sha256": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+    },
+    {
+      "path": "vendor/preview/Libheif-THIRD-PARTY.txt",
+      "sha256": "fa81ce652315b013359d6e8e4744335f31a50c7c192907176d3632f78a3b4596"
+    },
     {
       "path": "vendor/preview/Mammoth-LICENSE.txt",
       "sha256": "6663bbd049205d38a496ccacb412a151980b444627d38de218b3b809aef330f1"
@@ -26,6 +39,10 @@
     {
       "path": "vendor/preview/SheetJS-LICENSE.txt",
       "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+    },
+    {
+      "path": "vendor/preview/libheif.js",
+      "sha256": "2256ffee78039843ac47581b731bf837e4a29f08ffa91b7409caebd89a6968ea"
     },
     {
       "path": "vendor/preview/mammoth.browser.min.js",

@@ -1,0 +1,1 @@
+(function(root){'use strict';const limits=Object.freeze({fileBytes:100*1024*1024,fileLabel:'100 MB',personalBytes:1024*1024*1024,totalBytes:10*1024*1024*1024,legacyJsonBytes:2900000});if(typeof module==='object'&&module.exports)module.exports=limits;else root.UploadLimits=limits;})(typeof globalThis!=='undefined'?globalThis:this);

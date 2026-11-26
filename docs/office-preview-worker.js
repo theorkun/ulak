@@ -15,7 +15,7 @@ function checkArchive(buffer){
 }
 self.onmessage=async event=>{
   try{
-    const {kind,buffer}=event.data;if(!(buffer instanceof ArrayBuffer)||buffer.byteLength>2*1024*1024)throw Error('Dosya önizleme sınırını aşıyor.');checkArchive(buffer);
+    const {kind,buffer}=event.data;if(!(buffer instanceof ArrayBuffer)||buffer.byteLength>100*1024*1024)throw Error('Dosya önizleme sınırını aşıyor.');checkArchive(buffer);
     if(kind==='docx'){
       importScripts('vendor/preview/mammoth.browser.min.js');
       const result=await self.mammoth.extractRawText({arrayBuffer:buffer},{externalFileAccess:false});

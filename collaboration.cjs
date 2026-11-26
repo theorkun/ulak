@@ -1,17 +1,25 @@
 const crypto=require('node:crypto');
+const limits=require('./public/upload-limits.js');
 const bad=message=>{const e=Error(message);e.status=400;throw e;};
 function decodeFile(input,avatar=false){
   if(!input||typeof input.data!=='string')bad('Dosya seçin.');
   const match=/^data:([a-z0-9.+/-]+);base64,([A-Za-z0-9+/]*={0,2})$/.exec(input.data);
   if(!match)bad('Dosya biçimi geçersiz.');
   const bytes=Buffer.from(match[2],'base64');
-  if(!bytes.length||bytes.length>(avatar?150000:2*1024*1024)||bytes.toString('base64')!==match[2])bad(avatar?'Fotoğraf en fazla 150 KB olmalı.':'Dosya en fazla 2 MB olmalı.');
+  if(bytes.toString('base64')!==match[2])bad('Dosya biçimi geçersiz.');
+  return decodeBinary({name:input.name,type:match[1]},bytes,avatar);
+}
+function decodeBinary(input,bytes,avatar=false){
+  if(!input||!Buffer.isBuffer(bytes)||!bytes.length||bytes.length>(avatar?150000:limits.fileBytes))bad(avatar?'Fotoğraf en fazla 150 KB olmalı.':'Dosya en fazla 100 MB olmalı.');
   const name=String(input.name||'foto.jpg').replace(/[\\/\x00-\x1f\x7f]/g,'_').slice(0,120);
   const ext=name.split('.').at(-1).toLowerCase();
   const png=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
   const jpg=bytes[0]===255&&bytes[1]===216&&bytes[2]===255&&bytes.at(-2)===255&&bytes.at(-1)===217;
   const types={png:['image/png',png],jpg:['image/jpeg',jpg],jpeg:['image/jpeg',jpg],pdf:['application/pdf',bytes.subarray(0,5).toString()==='%PDF-'],txt:['text/plain',!bytes.includes(0)],docx:['application/vnd.openxmlformats-officedocument.wordprocessingml.document',bytes.subarray(0,4).equals(Buffer.from([80,75,3,4]))],xlsx:['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',bytes.subarray(0,4).equals(Buffer.from([80,75,3,4]))]};
-  const item=types[ext];if(!item||!item[1]||match[1]!==item[0]||(avatar&&!['jpg','jpeg','png'].includes(ext)))bad('Desteklenmeyen dosya. PDF, TXT, DOCX, XLSX, PNG veya JPG kullanın.');
+  const heif=bytes.length>=16&&bytes.subarray(4,8).toString()==='ftyp'&&/heic|heix|hevc|hevx|mif1|msf1/.test(bytes.subarray(8,Math.min(bytes.length,64)).toString('ascii'));
+  const dng=bytes.length>=8&&(bytes.subarray(0,4).equals(Buffer.from([73,73,42,0]))||bytes.subarray(0,4).equals(Buffer.from([77,77,0,42])));
+  types.heic=['image/heic',heif];types.heif=['image/heif',heif];types.dng=['image/x-adobe-dng',dng];
+  const item=types[ext];if(!item||!item[1]||input.type!==item[0]||(avatar&&!['jpg','jpeg','png'].includes(ext)))bad('Desteklenmeyen dosya. PDF, TXT, DOCX, XLSX, PNG, JPG, HEIC veya DNG kullanın.');
   return{name,type:item[0],bytes};
 }
 function install(db){
@@ -62,4 +70,4 @@ function createCollaboration({db,body,session,member,json,fail,event,audit,limit
     return false;
   };
 }
-module.exports={install,decodeFile,createCollaboration};
+module.exports={install,decodeFile,decodeBinary,createCollaboration};

@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#00b2a9">
   <title>Turkuaz Kurumsal İletişim · Kurum İletişim Alanı</title>
-  <link rel="icon" href="icon.svg?v=25">
-  <link rel="stylesheet" href="fonts.css?v=25">
-  <link rel="stylesheet" href="style.css?v=25">
-  <link rel="stylesheet" href="brand-guide.css?v=25">
-  <link rel="stylesheet" href="collaboration.css?v=25">
-  <link rel="stylesheet" href="file-preview.css?v=25">
-  <script src="file-preview.js?v=25" defer></script>
-  <script src="collaboration.js?v=25" defer></script>
-  <script src="app.js?v=25" defer></script>
-  <script src="auth.js?v=25" defer></script>
+  <link rel="icon" href="icon.svg?v=26">
+  <link rel="stylesheet" href="fonts.css?v=26">
+  <link rel="stylesheet" href="style.css?v=26">
+  <link rel="stylesheet" href="brand-guide.css?v=26">
+  <link rel="stylesheet" href="collaboration.css?v=26">
+  <link rel="stylesheet" href="file-preview.css?v=26">
+  <script src="upload-limits.js?v=26" defer></script>
+  <script src="file-preview.js?v=26" defer></script>
+  <script src="collaboration.js?v=26" defer></script>
+  <script src="app.js?v=26" defer></script>
+  <script src="auth.js?v=26" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -86,9 +87,9 @@
         <section class="composer-card" aria-labelledby="composer-title">
           <h2 id="composer-title" class="sr-only">Mesaj yaz</h2>
           <div id="reply-preview" class="reply-preview" hidden><div><strong id="reply-label"></strong><span id="reply-text"></span></div><button class="icon-button" id="cancel-reply" aria-label="Yanıtı veya düzenlemeyi iptal et" data-icon="close"></button></div>
-          <div id="attachment-preview" class="attachment-preview" hidden><span id="attachment-name"></span><button id="remove-attachment" class="text-button" type="button">Vazgeç</button></div>
+          <div id="attachment-preview" class="attachment-preview" hidden><div><span id="attachment-name"></span><span id="upload-status" class="small" role="status" aria-live="polite"></span></div><button id="remove-attachment" class="text-button" type="button">Vazgeç</button></div>
           <form id="message-form"><label class="sr-only" for="message-input">Mesajınız</label><textarea id="message-input" rows="1" maxlength="4000" placeholder="Bir mesaj yazın…"></textarea><button class="button primary" id="send-message" type="submit">Gönder</button></form>
-          <div class="composer-tools"><label class="file-button">Dosya ekle<input id="message-file" class="sr-only" type="file" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg"></label><span class="muted small">En fazla 2 MB</span><label id="announcement-option" hidden><input id="send-announcement" type="checkbox"> Duyuru · Okudum onayı iste</label><button id="mention-person" class="text-button" type="button">@Kişi</button></div>
+          <div class="composer-tools"><label class="file-button">Dosya ekle<input id="message-file" class="sr-only" type="file" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg,.heic,.heif,.dng"></label><span class="muted small file-limit">En fazla 100 MB · iPhone HEIC / ProRAW</span><label id="announcement-option" hidden><input id="send-announcement" type="checkbox"> Duyuru · Okudum onayı iste</label><button id="mention-person" class="text-button" type="button">@Kişi</button></div>
           <div class="composer-status"><span id="message-length">0 / 4000</span><span class="keyboard-hint">Enter ile gönder · Shift + Enter ile yeni satır</span></div>
         </section>
       </section>
