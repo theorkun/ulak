@@ -50,6 +50,7 @@ function createChat(options = {}) {
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor_id INTEGER REFERENCES users(id), action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`);
   if(!db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='is_super_admin'))db.exec('ALTER TABLE users ADD COLUMN is_super_admin INTEGER NOT NULL DEFAULT 0 CHECK(is_super_admin IN (0,1))');
   collaboration.install(db);
+  require('./message-status.cjs').install(db);
   db.function('fold', { deterministic: true }, fold);
   const rooms = createRooms(db);
   const setupToken = options.setupToken || crypto.randomBytes(24).toString('hex');
@@ -75,9 +76,9 @@ function createChat(options = {}) {
     if (!row) fail(404, 'Sohbet bulunamadı veya bu sohbete erişiminiz yok.');
     return row;
   };
-  function event(payload, conversationId = null) {
+  function event(payload, conversationId = null,onlyUsers=null) {
     const ids = conversationId ? new Set(db.prepare("SELECT m.user_id FROM members m JOIN users u ON u.id=m.user_id JOIN conversations c ON c.id=m.conversation_id WHERE m.conversation_id=? AND u.active=1 AND (c.scope='general' OR (c.scope='department' AND c.department_id=u.department_id))").all(conversationId).map(x => x.user_id)) : null;
-    for (const client of clients) if (!ids || ids.has(client.userId)) {
+    for (const client of clients) if ((!ids || ids.has(client.userId))&&(!onlyUsers||onlyUsers.has(client.userId))) {
       if (client.res.writableEnded || client.res.destroyed) continue;
       if (client.res.writableLength > 128 * 1024) { client.res.destroy(); continue; }
       client.res.write(`event: refresh\ndata: ${JSON.stringify(payload)}\n\n`);
@@ -128,11 +129,13 @@ function createChat(options = {}) {
         const messageId = transaction(() => {
           const mid = Number(db.prepare('INSERT INTO messages(conversation_id,sender_id,body,client_id,reply_to) VALUES(?,?,?,?,?)').run(id, user.id, content, clientId, reply).lastInsertRowid);
           if(attachment)db.prepare('INSERT INTO attachments(message_id,name,type,bytes) VALUES(?,?,?,?)').run(mid,attachment.name,attachment.type,attachment.bytes);
+          messageStatus.snapshot(mid,id,user.id);
           if(input.announcement)db.prepare('UPDATE messages SET announcement=1 WHERE id=?').run(mid);
           db.prepare('UPDATE members SET last_read=? WHERE conversation_id=? AND user_id=?').run(mid, id, user.id); return mid;
         }); event({ kind: 'message', conversationId: id }, id); return {status:201,id:messageId};
   }
   const largeUpload=require('./large-upload.cjs')({fail,session,member,limited,saveMessage,decodeBinary:collaboration.decodeBinary,json});
+  const messageStatus=require('./message-status.cjs').createMessageStatus({db,body,session,member,json,fail,event});
   const collaborationRoute=collaboration.createCollaboration({db,body,session,member,json,fail,event,audit,limited,clients,publicUser});
   const staffImport=require('./staff-import.cjs')({db,body,session,admin,fail,text,contacts,passwordHash,transaction,rooms,publicUser,audit,event,json});
   async function handle(req, res) {
@@ -202,6 +205,7 @@ function createChat(options = {}) {
       }
       if (user.must_change) fail(428, 'Devam etmeden önce geçici parolanızı değiştirin.');
       const fileRoute=route.match(/^\/api\/conversations\/(\d+)\/file-message$/);if(fileRoute&&req.method==='POST')return largeUpload(req,res,user,Number(fileRoute[1]));
+      if(await messageStatus.handle(req,res,url,user))return;
       if(await collaborationRoute(req,res,url,user))return;
       if(route==='/api/admin/import'&&req.method==='POST'){limited('import:'+user.id,4,60000);return staffImport(req,res,user);}
       if (route === '/api/users' && req.method === 'GET') {
@@ -314,7 +318,7 @@ function createChat(options = {}) {
       if (match && req.method === 'POST') {
         const id = Number(match[1]); member(user.id, id); const input = await body(req), lastId = Number(input.lastId);
         if (!Number.isSafeInteger(lastId) || lastId < 0 || lastId && !db.prepare('SELECT id FROM messages WHERE id=? AND conversation_id=?').get(lastId, id)) fail(400, 'Geçersiz okuma bilgisi.');
-        db.prepare('UPDATE members SET last_read=max(last_read,?) WHERE conversation_id=? AND user_id=?').run(lastId, id, user.id); return json(res, 200, { ok: true });
+        db.prepare('UPDATE members SET last_read=max(last_read,?) WHERE conversation_id=? AND user_id=?').run(lastId, id, user.id);messageStatus.read(user.id,id,lastId); return json(res, 200, { ok: true });
       }
       match = route.match(/^\/api\/messages\/(\d+)$/);
       if (match && ['PATCH', 'DELETE'].includes(req.method)) {
@@ -322,7 +326,7 @@ function createChat(options = {}) {
         if (!message || message.sender_id !== user.id || message.deleted_at) fail(404, 'Mesaj bulunamadı veya düzenleme yetkiniz yok.');
         member(user.id, message.conversation_id);
         if (req.method === 'PATCH') { const input = await body(req);session(req);member(user.id,message.conversation_id); const result=db.prepare("UPDATE messages SET body=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND deleted_at IS NULL").run(text(input.body, 1, 4000, 'Mesaj'), id);if(!result.changes)fail(404,'Mesaj geri alınmış; düzenlenemez.'); }
-        else transaction(()=>{db.prepare("UPDATE messages SET body='',pinned=0,deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(id);db.prepare('DELETE FROM attachments WHERE message_id=?').run(id);db.prepare('DELETE FROM acknowledgements WHERE message_id=?').run(id);audit(user.id,'message_recalled',id);});
+        else transaction(()=>{db.prepare("UPDATE messages SET body='',pinned=0,deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(id);db.prepare('DELETE FROM attachments WHERE message_id=?').run(id);db.prepare('DELETE FROM acknowledgements WHERE message_id=?').run(id);db.prepare('DELETE FROM message_recipients WHERE message_id=?').run(id);audit(user.id,'message_recalled',id);});
         event({ kind: 'message', conversationId: message.conversation_id }, message.conversation_id); return json(res, 200, { ok: true });
       }
       if (route === '/api/search' && req.method === 'GET') {
@@ -354,6 +358,7 @@ function createChat(options = {}) {
     files['/collaboration.js']=['collaboration.js','text/javascript'];
     files['/collaboration.css']=['collaboration.css','text/css'];
     files['/file-preview.js']=['file-preview.js','text/javascript'];files['/file-preview.css']=['file-preview.css','text/css'];files['/office-preview-worker.js']=['office-preview-worker.js','text/javascript'];
+    files['/chat-interactions.js']=['chat-interactions.js','text/javascript'];files['/chat-interactions.css']=['chat-interactions.css','text/css'];
     files['/upload-limits.js']=['upload-limits.js','text/javascript'];files['/photo-preview-worker.js']=['photo-preview-worker.js','text/javascript'];
     for(const asset of require('./preview-assets.json').files){const extension=path.extname(asset.path);files['/'+asset.path]=[asset.path,extension==='.mjs'||extension==='.js'?'text/javascript':extension==='.txt'||extension===''?'text/plain':extension==='.ttf'?'font/ttf':'application/octet-stream'];}
     files['/fonts.css']=['fonts.css','text/css'];

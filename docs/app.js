@@ -26,7 +26,6 @@ function profile(){
   if(!state.user)return;
   $('#profile-name').textContent=state.user.name;$('#profile-department').textContent=state.user.department;
   $('#profile-avatar').innerHTML=avatarContent(state.user);$('#admin-open').hidden=!['admin','super_admin'].includes(state.user.role);$('#profile-role').textContent=roleName(state.user.role);
-  $('#announcement-option').hidden=!['admin','super_admin'].includes(state.user.role);
   $$('#user-form [name="role"] option').forEach(option=>{option.hidden=option.disabled=option.value!=='member'&&state.user.role!=='super_admin';});
 }
 async function boot(){
@@ -52,7 +51,7 @@ $('#auth-form').addEventListener('submit',async e=>{
 });
 async function enter(me){state.user=me.user;state.csrf=me.csrf;$('#auth-screen').hidden=true;$('#workspace').hidden=false;profile();if(state.user.mustChangePassword){passwordDialog();return;}await refresh(true);connect();if(!state.active){const room=state.rooms.find(r=>r.scope==='general')||state.rooms[0];if(room)await openRoom(room.id);}}
 function signOut(){
-  cancelFileUpload();FilePreviews.reset();clearPrivateDrafts();clearAttachment();pendingSend=null;clearImport();
+  ChatUX.reset();cancelFileUpload();FilePreviews.reset();clearPrivateDrafts();clearAttachment();pendingSend=null;clearImport();
   clearTimeout(readTimer);markedReads.clear();
   $('#forgot-password').hidden=false;
   state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.directory=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
@@ -60,7 +59,7 @@ function signOut(){
   $('#setup-fields').hidden=true;['#setup-token','#setup-name','#setup-department'].forEach(s=>$(s).required=false);$('#login-password').minLength=1;$('#login-password').autocomplete='current-password';$('#auth-title').textContent=state.setup?'İlk kurulum':'Hoş geldiniz';$('#auth-description').textContent='Kurum hesabınızla devam edin.';$('#auth-submit').textContent='Giriş yap';
 }
 $('#logout').addEventListener('click',async()=>{state.source?.close();try{await api('/api/logout',{});signOut();}catch(e){toast(e.message);if(state.user)connect();}});
-function connect(){state.source?.close();if(window.ULAK_DEMO){$('#connection-text').textContent='Tarayıcı demosu';return;}const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>scheduleRefresh(JSON.parse(e.data)));source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
+function connect(){state.source?.close();if(window.ULAK_DEMO){$('#connection-text').textContent='Tarayıcı demosu';return;}const source=new EventSource('/api/events');state.source=source;source.addEventListener('connected',()=>{$('#connection-dot').classList.add('connected');$('#connection-text').textContent='Canlı bağlantı';scheduleRefresh({kind:'directory'});});source.addEventListener('refresh',e=>{const value=JSON.parse(e.data);ChatUX.event(value);if(value.kind!=='receipt')scheduleRefresh(value);});source.onerror=()=>{$('#connection-dot').classList.remove('connected');$('#connection-text').textContent='Yeniden bağlanıyor…';if(state.user)api('/api/me').catch(()=>{});};}
 function scheduleRefresh(value={}){
   if(value.conversationId===state.active)pendingMessage=true;if(['directory','presence'].includes(value.kind))pendingDirectory=true;clearTimeout(refreshTimer);
   refreshTimer=setTimeout(async()=>{if(!state.user||state.user.mustChangePassword)return;try{const directory=pendingDirectory;pendingDirectory=false;await refresh(directory);if(pendingMessage&&state.active){pendingMessage=false;if(state.history)$('#jump-latest').hidden=false;else await loadMessages(false);}}catch(e){if(state.user)toast(e.message);}},180);
@@ -69,7 +68,7 @@ async function refresh(includeIdentity=false){
   const [rooms,me,directory]=await Promise.all([api('/api/conversations'),includeIdentity?api('/api/me'):Promise.resolve(null),includeIdentity?api('/api/directory'):Promise.resolve(null)]);if(!state.user)return;
   notifyNewMessages(state.rooms,rooms.conversations);state.rooms=rooms.conversations;if(directory)state.directory=directory.departments;if(me){state.user=me.user;state.csrf=me.csrf;profile();}
   if(state.active&&!state.rooms.some(r=>r.id===state.active)){state.active=null;state.messages=[];$('#message-feed').replaceChildren();const general=state.rooms.find(r=>r.scope==='general');if(general)await openRoom(general.id);}
-  renderRooms();renderHeader();
+  renderRooms();renderHeader();ChatUX.syncRooms(state.rooms);
 }
 function renderRooms(){
   const q=fold($('#chat-filter').value),visible=state.rooms.filter(r=>fold(r.title).includes(q));
@@ -101,6 +100,7 @@ async function loadMessages(scroll,around=null){
   if(scroll&&!around&&!state.unreadMarker){const unread=state.rooms.find(r=>r.id===id)?.unread||0;if(unread){state.unreadMarker=result.messages.filter(m=>m.sender.id!==state.user.id&&!m.deleted).slice(-unread)[0]?.id||0;state.unreadCount=unread;}}
   state.messages=result.messages;state.more=result.hasMore;renderMessages(around);
   if(around)document.getElementById(`message-${around}`)?.scrollIntoView({block:'center'});else if(scroll||atBottom){container.scrollTop=container.scrollHeight;$('#jump-latest').hidden=true;}else{const next=anchorId&&document.getElementById(anchorId);container.scrollTop=oldTop+(next?next.getBoundingClientRect().top-container.getBoundingClientRect().top-anchorOffset:0);$('#jump-latest').hidden=false;}
+  await ChatUX.delivered(id,result.messages).catch(()=>{});
   if(!state.history&&(scroll||atBottom)&&document.visibilityState==='visible')await markRead();
 }
 async function markRead(){const id=state.active,lastId=state.messages.at(-1)?.id;if(!id||!lastId||!state.user)return;const key=state.user.id+':'+id;if((markedReads.get(key)||0)>=lastId)return;await api(`/api/conversations/${id}/read`,{lastId});markedReads.set(key,Math.max(markedReads.get(key)||0,lastId));if(id===state.active){const r=state.rooms.find(r=>r.id===id);if(r)r.unread=0;renderRooms();renderHeader();}}
@@ -110,11 +110,11 @@ function renderMessages(highlight){
     const date=day(m.createdAt),own=m.sender.id===state.user.id;
     let prefix=date!==previousDay?`<div class="chat-day"><span>${esc(date===day(new Date())?'Bugün':date)}</span></div>`:'';previousDay=date;
     if(m.id===state.unreadMarker)prefix+=`<div class="unread-divider"><span>${state.unreadCount} okunmamış mesaj</span></div>`;
-    return prefix+`<article id="message-${m.id}" class="post ${own?'own':''} ${m.deleted?'deleted':''} ${m.id===highlight?'highlight':''}"><header class="post-header"><span class="avatar">${avatarContent(m.sender)}</span><div class="post-author"><strong>${esc(own?'Siz':m.sender.name)}</strong><small>${esc(m.sender.department||'Kurum personeli')}</small></div>${m.pinned&&!m.deleted?'<span class="message-tag">Sabit</span>':''}${m.announcement&&!m.deleted?'<span class="message-tag">Duyuru</span>':''}</header>${m.reply?`<button class="post-quote" data-jump="${m.reply.id}"><strong>${esc(m.reply.name)}</strong><span>${esc(m.reply.body)}</span></button>`:''}<div class="post-body">${m.deleted?'Bu mesaj geri alındı.':messageText(m.body)}</div>${messageAttachment(m)}<footer class="post-footer">${messageActions(m,own)}<span class="message-meta">${m.editedAt&&!m.deleted?'<span>Düzenlendi</span>':''}<time datetime="${esc(m.createdAt)}" title="${esc(date)}">${clock(m.createdAt)}</time></span></footer></article>`;
+    return prefix+`<article id="message-${m.id}" tabindex="0" aria-haspopup="dialog" class="post ${own?'own':''} ${m.attachment&&!m.deleted?'has-attachment':''} ${m.deleted?'deleted':''} ${m.id===highlight?'highlight':''}"><header class="post-header"><span class="avatar">${avatarContent(m.sender)}</span><div class="post-author"><strong>${esc(own?'Siz':m.sender.name)}</strong><small>${esc(m.sender.department||'Kurum personeli')}</small></div>${m.pinned&&!m.deleted?'<span class="message-tag">Sabit</span>':''}</header>${m.reply?`<button class="post-quote" data-jump="${m.reply.id}"><strong>${esc(m.reply.name)}</strong><span>${esc(m.reply.body)}</span></button>`:''}${!m.attachment||m.deleted?`<div class="post-body">${m.deleted?'Bu mesaj geri alındı.':messageText(m.body)}</div>`:''}${messageAttachment(m)}<footer class="post-footer">${messageActions(m,own)}<span class="message-meta">${m.editedAt&&!m.deleted&&!m.attachment?'<span>Düzenlendi</span>':''}<time datetime="${esc(m.createdAt)}" title="${esc(date)}">${clock(m.createdAt)}</time></span></footer></article>`;
   }).join('');
-  if(!html)html='<p class="empty-feed">Henüz mesaj yok. İlk mesajı siz gönderin.</p>';if(state.more)html='<button id="load-older" class="older-messages">Daha eski mesajları yükle</button>'+html;$('#message-feed').innerHTML=html;FilePreviews.sync();
+  if(!html)html='<p class="empty-feed">Henüz mesaj yok. İlk mesajı siz gönderin.</p>';if(state.more)html='<button id="load-older" class="older-messages">Daha eski mesajları yükle</button>'+html;$('#message-feed').innerHTML=html;FilePreviews.sync();ChatUX.sync();
 }
-async function older(){const id=state.active,version=state.version,first=state.messages[0]?.id;if(!first||state.loadingOlder)return;state.loadingOlder=true;const container=$('.chat-timeline');try{const result=await api(`/api/conversations/${id}/messages?before=${first}`);if(id!==state.active||version!==state.version)return;const top=container.scrollTop,height=container.scrollHeight;state.messages=[...result.messages,...state.messages];state.more=result.hasMore;state.history=true;renderMessages();container.scrollTop=top+container.scrollHeight-height;$('#jump-latest').hidden=false;}catch(e){toast(e.message);}finally{if(id===state.active&&version===state.version)state.loadingOlder=false;}}
+async function older(){const id=state.active,version=state.version,first=state.messages[0]?.id;if(!first||state.loadingOlder)return;state.loadingOlder=true;const container=$('.chat-timeline');try{const result=await api(`/api/conversations/${id}/messages?before=${first}`);if(id!==state.active||version!==state.version)return;const top=container.scrollTop,height=container.scrollHeight;state.messages=[...result.messages,...state.messages];state.more=result.hasMore;state.history=true;renderMessages();ChatUX.delivered(id,result.messages).catch(()=>{});container.scrollTop=top+container.scrollHeight-height;$('#jump-latest').hidden=false;}catch(e){toast(e.message);}finally{if(id===state.active&&version===state.version)state.loadingOlder=false;}}
 function updateComposer(){const input=$('#message-input');$('#message-length').textContent=`${input.value.length} / 4000`;input.style.height='auto';input.style.height=Math.max(44,Math.min(input.scrollHeight,140))+'px';}
 function cancelReply(){state.reply=null;state.edit=null;$('#reply-preview').hidden=true;$('#composer-title').textContent='Mesaj yaz';$('#send-message').textContent='Gönder';}
 $('#message-input').addEventListener('input',()=>{updateComposer();if(state.active)state.drafts.set(state.active,$('#message-input').value);});
@@ -179,4 +179,5 @@ document.addEventListener('click',async e=>{
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.user&&!state.user.mustChangePassword)scheduleRefresh({kind:'directory',conversationId:state.active});});
 FilePreviews.init();
 initCollaboration();
+ChatUX.init();
 boot();

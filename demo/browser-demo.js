@@ -14,7 +14,7 @@
     ['demo.teknik','Can Aksoy','Destek Hizmetleri Müdürlüğü','member'],
     ['demo.butce','Ece Şahin','Mali Hizmetler Müdürlüğü','member']
   ].map(([username,name,department,role],i)=>({id:i+1,username,name,department,departmentId:departments.find(d=>d.name===department).id,role,active:true,mustChangePassword:false,password:username==='orkun'?'admin':password}));
-  const messages=[],audit=[],reads=new Map(),hidden=new Set(),acks=new Set(),fileUrls=new Set();let current=null,nextMessage=1;
+  const messages=[],audit=[],reads=new Map(),hidden=new Set(),acks=new Set(),fileUrls=new Set(),recipients=new Map();let current=null,nextMessage=1;
   const now=()=>new Date().toISOString();
   const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
   const fold=s=>String(s).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
@@ -28,7 +28,7 @@
   const manage=user=>{if(current.role!=='super_admin'&&user.role!=='member')fail(403,'Yönetici hesapları süper admin yetkisi gerektirir.');};
   const validText=(value,min,max,label)=>{const s=String(value||'').trim();if(s.length<min||s.length>max)fail(400,label+' uzunluğu uygun değil.');return s;};
   function post(conversationId,senderId,body,minutes=0,extra={}){
-    const m={id:nextMessage++,conversationId,senderId,body,createdAt:new Date(Date.now()-minutes*60000).toISOString(),editedAt:null,deleted:false,replyTo:null,...extra};messages.push(m);return m;
+    const m={id:nextMessage++,conversationId,senderId,body,createdAt:new Date(Date.now()-minutes*60000).toISOString(),editedAt:null,deleted:false,replyTo:null,...extra};messages.push(m);if(minutes===0)recipients.set(m.id,people.filter(p=>p.active&&p.id!==senderId&&(conversationId===1||conversationId===roomId(p.departmentId))).map(p=>({id:p.id,deliveredAt:null,readAt:null})));return m;
   }
   const visible=m=>!hidden.has(current.id+':'+m.id);
   function message(m){const reply=messages.find(r=>r.id===m.replyTo);return {...m,body:m.deleted?'':m.body,attachment:m.deleted?null:m.attachment||null,acknowledged:acks.has(current.id+':'+m.id),acknowledgements:[...acks].filter(key=>key.endsWith(':'+m.id)).length,sender:publicUser(people.find(p=>p.id===m.senderId)),reply:reply?{id:reply.id,name:people.find(p=>p.id===reply.senderId).name,body:reply.deleted?'Bu mesaj geri alındı.':reply.body}:null};}
@@ -71,6 +71,10 @@
       if(action==='receipts'&&verb==='GET')return{people:people.filter(p=>acks.has(p.id+':'+m.id)).map(p=>({name:p.name,created_at:m.createdAt}))};fail(405,'Yöntem desteklenmiyor.');
     }
     if(path==='/api/directory')return{departments:departments.map(d=>({...d,accessible:d.id===current.departmentId}))};
+    const statusRoute=path.match(/^\/api\/messages\/(\d+)\/status$/);
+    if(statusRoute&&verb==='GET'){const m=messages.find(m=>m.id===Number(statusRoute[1])&&!m.deleted&&m.senderId===current.id);if(!m)fail(404,'Mesaj bilgisi bulunamadı.');guard(m.conversationId);return{messageId:m.id,tracked:recipients.has(m.id),recipients:(recipients.get(m.id)||[]).map(r=>({...r,name:people.find(p=>p.id===r.id).name,avatarUrl:people.find(p=>p.id===r.id).avatarUrl||''}))};}
+    const deliveryRoute=path.match(/^\/api\/conversations\/(\d+)\/delivered$/);
+    if(deliveryRoute&&verb==='POST'){const id=Number(deliveryRoute[1]);guard(id);if(!Array.isArray(input.messageIds)||input.messageIds.length>100||input.messageIds.some(mid=>!Number.isSafeInteger(mid)||!messages.some(m=>m.id===mid&&m.conversationId===id)))fail(400,'Geçersiz teslim bilgisi.');for(const mid of input.messageIds){const r=recipients.get(mid)?.find(r=>r.id===current.id);if(r&&!r.deliveredAt&&!messages.find(m=>m.id===mid).deleted)r.deliveredAt=now();}return{ok:true};}
     const binary=path.match(/^\/api\/conversations\/(\d+)\/file-message$/);
     if(binary&&verb==='POST'){
       const id=Number(binary[1]);guard(id);const file=input.file,info=input.attachment;
@@ -83,7 +87,7 @@
     let match=path.match(/^\/api\/conversations\/(\d+)\/(messages|read)$/);
     if(match){
       const id=Number(match[1]);guard(id);
-      if(match[2]==='read'){reads.set(current.id+':'+id,Number(input.lastId)||0);return{ok:true};}
+      if(match[2]==='read'){const last=Number(input.lastId)||0;reads.set(current.id+':'+id,Math.max(reads.get(current.id+':'+id)||0,last));for(const m of messages.filter(m=>m.conversationId===id&&m.id<=last&&!m.deleted)){const r=recipients.get(m.id)?.find(r=>r.id===current.id);if(r){r.deliveredAt??=now();r.readAt??=now();}}return{ok:true};}
       if(verb==='POST'){
         const body=validText(input.body,1,4000,'Mesaj');
         const duplicate=messages.find(m=>m.senderId===current.id&&m.clientId===input.clientId&&m.conversationId===id);if(duplicate)return{message:message(duplicate)};
@@ -98,7 +102,7 @@
       return{messages:rows.slice(-50).map(message),hasMore:rows.length>50};
     }
     match=path.match(/^\/api\/messages\/(\d+)$/);
-    if(match){const m=messages.find(m=>m.id===Number(match[1]));if(!m||m.deleted)fail(404,'Mesaj bulunamadı.');guard(m.conversationId);if(m.senderId!==current.id)fail(403,'Yalnızca kendi mesajınızı düzenleyebilirsiniz.');if(verb==='DELETE'){m.deleted=true;m.body='';if(fileUrls.has(m.attachment?.url)){URL.revokeObjectURL(m.attachment.url);fileUrls.delete(m.attachment.url);}m.attachment=null;m.pinned=false;log('message_recalled',m.id);}else if(verb==='PATCH'){m.body=validText(input.body,1,4000,'Mesaj');m.editedAt=now();}else fail(405,'İşlem desteklenmiyor.');return{message:message(m)};}
+    if(match){const m=messages.find(m=>m.id===Number(match[1]));if(!m||m.deleted)fail(404,'Mesaj bulunamadı.');guard(m.conversationId);if(m.senderId!==current.id)fail(403,'Yalnızca kendi mesajınızı düzenleyebilirsiniz.');if(verb==='DELETE'){m.deleted=true;m.body='';recipients.delete(m.id);if(fileUrls.has(m.attachment?.url)){URL.revokeObjectURL(m.attachment.url);fileUrls.delete(m.attachment.url);}m.attachment=null;m.pinned=false;log('message_recalled',m.id);}else if(verb==='PATCH'){m.body=validText(input.body,1,4000,'Mesaj');m.editedAt=now();}else fail(405,'İşlem desteklenmiyor.');return{message:message(m)};}
     if(path==='/api/search'){const q=fold(validText(url.searchParams.get('q'),2,100,'Arama'));let rows=messages.filter(m=>allowed(m.conversationId)&&visible(m)&&!m.deleted&&fold(m.body).includes(q));const p=url.searchParams;rows=rows.filter(m=>(!p.get('room')||m.conversationId===Number(p.get('room')))&&(!p.get('sender')||m.senderId===Number(p.get('sender')))&&(!p.get('from')||m.createdAt.slice(0,10)>=p.get('from'))&&(!p.get('to')||m.createdAt.slice(0,10)<=p.get('to'))&&(p.get('files')!=='1'||m.attachment)&&(!p.get('before')||m.id<Number(p.get('before')))).reverse();return{messages:rows.slice(0,60).map(message),hasMore:rows.length>60};}
     if(path.startsWith('/api/admin/')){
       admin();
