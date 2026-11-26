@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#00b2a9">
   <title>Turkuaz Kurumsal İletişim · Tarayıcı Demosu</title>
-  <link rel="icon" href="icon.svg?v=24">
-  <link rel="stylesheet" href="fonts.css?v=24">
-  <link rel="stylesheet" href="style.css?v=24">
-  <link rel="stylesheet" href="brand-guide.css?v=24">
-  <link rel="stylesheet" href="collaboration.css?v=24">
-  <script src="collaboration.js?v=24" defer></script>
-  <script src="browser-demo.js?v=24" defer></script>
-  <script src="app.js?v=24" defer></script>
-  <script src="auth.js?v=24" defer></script>
+  <link rel="icon" href="icon.svg?v=25">
+  <link rel="stylesheet" href="fonts.css?v=25">
+  <link rel="stylesheet" href="style.css?v=25">
+  <link rel="stylesheet" href="brand-guide.css?v=25">
+  <link rel="stylesheet" href="collaboration.css?v=25">
+  <link rel="stylesheet" href="file-preview.css?v=25">
+  <script src="file-preview.js?v=25" defer></script>
+  <script src="collaboration.js?v=25" defer></script>
+  <script src="browser-demo.js?v=25" defer></script>
+  <script src="app.js?v=25" defer></script>
+  <script src="auth.js?v=25" defer></script>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen">
@@ -109,6 +111,7 @@
     <form id="password-form"><label>Mevcut parola<input id="current-password" type="password" required maxlength="128" autocomplete="current-password"></label><label>Yeni parola<input id="new-password" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label><label>Yeni parola tekrar<input id="repeat-password" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></label><p class="small muted">En az 10 karakter kullanın.</p><p id="password-error" class="form-error" role="alert"></p><button class="button primary full" type="submit">Kaydet</button></form>
   </dialog>
   <dialog id="delete-message-dialog" aria-labelledby="delete-message-title"><div class="dialog-head"><h2 id="delete-message-title">Mesajı sil</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div><p>Mesajı yalnızca kendinizden gizleyebilir veya kendi mesajınızı herkes için geri alabilirsiniz.</p><p class="muted small">Herkesten silme, mesaj içeriğini ve ekini canlı veritabanından kaldırır. Daha önce okunan, indirilen, kopyalanan içerikler ve eski yedekler geri alınamaz.</p><div class="delete-options"><button id="delete-for-me" type="button" class="button">Benden gizle</button><button id="delete-for-everyone" type="button" class="button danger">Herkesten sil · Geri al</button></div><p id="delete-status" class="form-error" role="alert"></p></dialog>
+  <dialog id="file-viewer-dialog" class="file-viewer-dialog" aria-labelledby="file-viewer-title"><div class="dialog-head"><h2 id="file-viewer-title">Dosya önizlemesi</h2><button class="icon-button" data-close aria-label="Önizlemeyi kapat" data-icon="close"></button></div><div id="file-pdf-controls" class="file-viewer-controls" hidden><button id="file-page-prev" class="button" type="button" aria-label="Önceki PDF sayfası">Önceki sayfa</button><span id="file-page-label" aria-live="polite"></span><button id="file-page-next" class="button" type="button" aria-label="Sonraki PDF sayfası">Sonraki sayfa</button></div><label id="file-sheet-controls" class="file-viewer-controls" hidden>Çalışma sayfası<select id="file-sheet-select"></select></label><p id="file-viewer-note" class="small muted"></p><div id="file-viewer-content" class="file-viewer-content" aria-busy="false"></div></dialog>
   <dialog id="admin-dialog" class="wide-dialog" aria-labelledby="admin-title">
     <div class="dialog-head"><h2 id="admin-title">Yönetim</h2><button class="icon-button" data-close aria-label="Kapat" data-icon="close"></button></div>
     <details class="admin-section" id="add-user-section"><summary>Personel ekle</summary><form id="user-form" class="user-form"><label>Ad soyad<input name="name" required minlength="2" maxlength="80"></label><label>Kullanıcı adı<input name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]+" placeholder="ad.soyad"></label><label>Müdürlük<select name="departmentId" id="user-department" required></select></label><label>E-posta<input name="email" type="email" maxlength="254" autocomplete="off"></label><label>Yetki<select name="role"><option value="member">Personel</option><option value="admin">Yönetici</option><option value="super_admin">Süper admin</option></select></label><button class="button primary" type="submit">Hesap oluştur</button></form><p class="muted small">İlk girişte değiştirilecek geçici parola üretilir.</p></details>

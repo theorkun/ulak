@@ -1,0 +1,111 @@
+{
+  "sources": {
+    "pdfjs": {
+      "version": "6.5.438",
+      "url": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "build": "legacy"
+    },
+    "mammoth": {
+      "version": "1.13.0",
+      "url": "https://registry.npmjs.org/mammoth/-/mammoth-1.13.0.tgz"
+    },
+    "sheetjs": {
+      "version": "0.20.3",
+      "url": "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js"
+    }
+  },
+  "files": [
+    {
+      "path": "vendor/preview/Mammoth-LICENSE.txt",
+      "sha256": "6663bbd049205d38a496ccacb412a151980b444627d38de218b3b809aef330f1"
+    },
+    {
+      "path": "vendor/preview/PDFjs-LICENSE.txt",
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "path": "vendor/preview/SheetJS-LICENSE.txt",
+      "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+    },
+    {
+      "path": "vendor/preview/mammoth.browser.min.js",
+      "sha256": "92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab"
+    },
+    {
+      "path": "vendor/preview/pdf.mjs",
+      "sha256": "522ad2c83bc8a0010e7f0cc60d0892b77c8d2bf2c9702dc12288311d94270f42"
+    },
+    {
+      "path": "vendor/preview/pdf.worker.mjs",
+      "sha256": "b4c8353ded0d88d2e2009574a29eb4e0c3ff7e942ecdf51ef5f71566a9667f31"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitDingbats.pfb",
+      "sha256": "845c752392b6c914fb989c75a08b7792b88f542d2499042ef2889f8c814a16ed"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitFixed.pfb",
+      "sha256": "b6c8fe53f134b8b6d4578cd2d544df4cee9624c4efa8d51a560fb40ea296101b"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitFixedBold.pfb",
+      "sha256": "f1b7159702973f54fc86254ea38bcf3712b2a736eb3a0995751e9f4bb45ad603"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitFixedBoldItalic.pfb",
+      "sha256": "8a000945843bd31add06aee63bf9fd41b7578b4f3242a4b7cd46349ad9d24d4d"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitFixedItalic.pfb",
+      "sha256": "5007faf8320fa1fcc08b8894b356ad976f60b992ba29ee5272578bbdebaf3876"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitSerif.pfb",
+      "sha256": "4f57d2b9d884af8f907bf22df6019b52d86cbf6214fdbd02b1ae05472a543f35"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitSerifBold.pfb",
+      "sha256": "0bdf4b04e964139818d51eda03d566ba999fc3ba2421b1c6c51f9dc969022e80"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitSerifBoldItalic.pfb",
+      "sha256": "a406cac82583bf98175cb62c87ed5e95c45fbb34eece63a10b0a13e793cb2e10"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitSerifItalic.pfb",
+      "sha256": "610ae0687198045c4db5d1a6650fd5e92536631706382eb8b72e38df578d0ae9"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/FoxitSymbol.pfb",
+      "sha256": "47967d055530e7357088a08403115425643ec2cdfd6201ba8af0fbd7116c1539"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LICENSE_FOXIT",
+      "sha256": "b578cdd2345840ada550bd12519533812320d5f1d21cf4c1c7e1b1b0a31c98b7"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LICENSE_LIBERATION",
+      "sha256": "d2c4d5b3e115a519cb58eb691aa64538397e2611f9ebe801392cf9667997e7dc"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LiberationSans-Bold.ttf",
+      "sha256": "361c61b82d575c5c35fd9157fda8b0194bcfcd0d88ea8521a4fb5dd53d33dddc"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LiberationSans-BoldItalic.ttf",
+      "sha256": "a224075ac17495ad0a3af3bc0a419ac0704a8b3fd1095456201fb9b095fc281d"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LiberationSans-Italic.ttf",
+      "sha256": "832b4406dbef23628800d3aaad21048534ac84d7e3ad955be83b8172ed8ef512"
+    },
+    {
+      "path": "vendor/preview/standard_fonts/LiberationSans-Regular.ttf",
+      "sha256": "f8ace1f892b2bd9dc1792ba7f097fa7588f84fed48321480e04de5390828221f"
+    },
+    {
+      "path": "vendor/preview/xlsx.mini.min.js",
+      "sha256": "0cb353f830d7288385492c83d277b058ddeac664ca51cf1393aa1fd3e2b70939"
+    }
+  ]
+}

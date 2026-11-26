@@ -129,6 +129,22 @@ Sunucu bilgisayarı açık kalmalıdır. Güvenlik duvarı otomatik değiştiril
 - **Toplu personel:** Yönetim → CSV ile toplu personel ekle. UTF-8 CSV şablonu, noktalı virgül/virgül ayırıcı, önizleme ve kullanıcı/müdürlük doğrulaması desteklenir. Her seferinde en fazla 50 hesap, yalnızca personel yetkisiyle ve zorunlu ilk parola değişimiyle açılır. Bir satır hatalıysa hiçbir hesap eklenmez. Oluşturma sonrasında geçici parolalar yalnızca yönetim penceresi açıkken indirilebilir; pencere kapanınca listeden temizlenir. İndirilen dosyayı yetkili personel korumalıdır.
 - **Demo:** Aynı ekran akışları sentetik verilerle denenebilir. Hesaplar, mesajlar, fotoğraflar, ekler ve onaylar yenilemede sıfırlanır; tarayıcı tercihleri ve sekme taslakları yukarıdaki şekilde saklanır. Gerçek kurumsal verilerle denemeyin.
 
+### Dosyayı indirmeden önizleme
+
+Sohbet içindeki dosya kartı artık indirme bağlantısı yerine içerik önizlemesi gösterir. Karta tıklanınca uygulama içindeki büyük görüntüleyici açılır:
+
+- JPG/PNG: sohbet içinde görsel, açıldığında büyük görünüm.
+- PDF: sohbet içinde ilk sayfanın görüntüsü; büyük görünümde önceki/sonraki sayfa düğmeleri. Şifreli veya bozuk PDF için açıklama gösterilir.
+- TXT: sohbet içinde metin özeti, büyük görünümde UTF-8 metin.
+- DOCX: Word belgesinin metin içeriği; özgün sayfa düzeni, tabloların yerleşimi ve gömülü görseller birebir korunmaz.
+- XLSX: sohbet içinde ilk sayfanın tablo özeti; büyük görünümde çalışma sayfası seçimi. İlk 10 çalışma sayfasının en fazla 200 satırı ve 30 sütunu, hücre başına 2.000 karakter gösterilir. Formül, makro ve harici bağlantı çalıştırılmaz; mevcut hücre değerleri kullanılır.
+
+Görüntüleyiciler `public/vendor/preview/` içinde yereldir: PDF.js 6.5.438 (uyumluluk derlemesi, Apache-2.0), Mammoth 1.13.0 (BSD-2-Clause), SheetJS 0.20.3 (Apache-2.0). Lisanslar aynı klasördedir; özgün kaynak adresleri ve SHA-256 özetleri `preview-assets.json` içinde kayıtlıdır. Çalışma sırasında Google/Microsoft veya başka bir dış önizleme servisine dosya gönderilmez. Güncellemelerde dosya özetleriyle birlikte manifest de güncellenmelidir.
+
+Office önizlemesi ayrı ve süre sınırı olan bir Web Worker içinde çalışır. Arşiv boyutları önceden sınırlandırılır; çıkarılan metin/cell değerleri HTML olarak çalıştırılmadan gösterilir. TXT/DOCX için ilk 200.000 karakter sınırı vardır. Dosya başına mevcut 2 MB yükleme sınırı devam eder. Önizlemeler salt okunurdur, belge düzenleme sunulmaz.
+
+Kurum sunucusunda `GET /api/attachments/:id?view=1`, dosyayı doğru MIME türü ve `inline` başlığıyla verir; normal indirme API'si geriye uyumluluk için korunur. Her iki yolda da oturum, müdürlük ve gizleme/silme kontrolü uygulanır; önbelleğe alma kapalıdır. Görüntüleyici kapatıldığında PDF kaynakları bırakılır, sohbet değişiminde/çıkışta geçici görseller temizlenir. Mesaj geri alındığında veya hesaptan gizlendiğinde açık dosya görüntüleyicisi kapanır. Önceden görülen/kopyalanan içerik geri alınamaz.
+
 ## Veri ve güvenlik sınırları
 
 - Parolalar scrypt ve rastgele tuzla özetlenir. Oturum çerezleri HttpOnly ve SameSite=Strict'tir. Değişiklik isteklerinde CSRF/kaynak kontrolü yapılır. Hesap kapatılınca veya parola değişince eski oturumlar geçersizleşir.

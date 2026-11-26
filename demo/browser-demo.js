@@ -81,7 +81,7 @@
         const duplicate=messages.find(m=>m.senderId===current.id&&m.clientId===input.clientId&&m.conversationId===id);if(duplicate)return{message:message(duplicate)};
         if(input.replyTo&&!messages.some(m=>m.id===input.replyTo&&m.conversationId===id&&!m.deleted))fail(400,'Yanıtlanan mesaj bulunamadı.');
         if(input.announcement)admin();
-        let attachment=null;if(input.attachment){const f=input.attachment;if(typeof f.name!=='string'||!/^data:(application\/pdf|text\/plain|image\/(png|jpeg)|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet));base64,[A-Za-z0-9+/]+={0,2}$/.test(f.data||'')||f.data.length>2800000)fail(400,'Geçersiz dosya veya boyut.');attachment={name:f.name,size:Math.floor(f.data.split(',')[1].length*3/4),url:f.data};}
+        let attachment=null;if(input.attachment){const f=input.attachment;if(typeof f.name!=='string'||!/^data:(application\/pdf|text\/plain|image\/(png|jpeg)|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet));base64,[A-Za-z0-9+/]+={0,2}$/.test(f.data||'')||f.data.length>2800000)fail(400,'Geçersiz dosya veya boyut.');attachment={name:f.name,type:f.data.slice(5,f.data.indexOf(';')),size:Math.floor(f.data.split(',')[1].length*3/4),url:f.data};}
         return{message:message(post(id,current.id,body,0,{clientId:input.clientId,replyTo:input.replyTo||null,attachment,announcement:!!input.announcement}))};
       }
       let rows=messages.filter(m=>m.conversationId===id&&visible(m));const before=Number(url.searchParams.get('before')),around=Number(url.searchParams.get('around'));

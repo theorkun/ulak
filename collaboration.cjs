@@ -43,7 +43,7 @@ function createCollaboration({db,body,session,member,json,fail,event,audit,limit
     if((match=route.match(/^\/api\/attachments\/(\d+)$/))&&method==='GET'){
       const m=db.prepare('SELECT * FROM messages WHERE id=? AND deleted_at IS NULL').get(Number(match[1]));if(!m)fail(404,'Dosya bulunamadı.');member(user.id,m.conversation_id);
       if(db.prepare('SELECT 1 FROM hidden_messages WHERE user_id=? AND message_id=?').get(user.id,m.id))fail(404,'Dosya bulunamadı.');
-      const f=db.prepare('SELECT * FROM attachments WHERE message_id=?').get(m.id);if(!f)fail(404,'Dosya bulunamadı.');res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':"attachment; filename=\"download\"; filename*=UTF-8''"+encodeURIComponent(f.name),'Cache-Control':'private, no-store'});res.end(f.bytes);return true;
+      const f=db.prepare('SELECT * FROM attachments WHERE message_id=?').get(m.id);if(!f)fail(404,'Dosya bulunamadı.');const inline=url.searchParams.get('view')==='1';res.setHeader('Content-Security-Policy',"sandbox; default-src 'none'; frame-ancestors 'none'");res.writeHead(200,{'Content-Type':inline?f.type:'application/octet-stream','Content-Disposition':(inline?'inline':'attachment')+"; filename=\"document\"; filename*=UTF-8''"+encodeURIComponent(f.name),'Cache-Control':'private, no-store'});res.end(f.bytes);return true;
     }
     if((match=route.match(/^\/api\/messages\/(\d+)\/(hide|pin|acknowledge|receipts)$/))){
       const m=db.prepare('SELECT * FROM messages WHERE id=?').get(Number(match[1]));if(!m)fail(404,'Mesaj bulunamadı.');member(user.id,m.conversation_id);const action=match[2];

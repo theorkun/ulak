@@ -84,7 +84,7 @@ function createChat(options = {}) {
   }
   const online = userId => [...clients].some(c => c.userId === userId);
   function messageRow(row) {
-    const attachment=row.deleted_at?null:db.prepare('SELECT name,length(bytes) size FROM attachments WHERE message_id=?').get(row.id);
+    const attachment=row.deleted_at?null:db.prepare('SELECT name,type,length(bytes) size FROM attachments WHERE message_id=?').get(row.id);
     return { id: row.id, conversationId: row.conversation_id, sender: { id: row.sender_id, name: row.name, department:row.sender_department,avatarUrl:row.avatar_version?`/api/avatars/${row.sender_id}?v=${row.avatar_version}`:'' }, body: row.deleted_at ? '' : row.body, createdAt: row.created_at, editedAt: row.edited_at, deleted: !!row.deleted_at,pinned:!!row.pinned,announcement:!!row.announcement,acknowledgements:row.deleted_at?0:db.prepare('SELECT count(*) n FROM acknowledgements WHERE message_id=?').get(row.id).n,acknowledged:!!(row.viewer_id&&db.prepare('SELECT 1 FROM acknowledgements WHERE message_id=? AND user_id=?').get(row.id,row.viewer_id)),attachment:attachment?{...attachment,url:`/api/attachments/${row.id}`} : null, reply: row.reply_to ? { id: row.reply_to, body: row.reply_deleted ? 'Silinen mesaj' : row.reply_body, name: row.reply_name } : null };
   }
   const messageSelect = `SELECT m.*,u.name,u.avatar_version,u.department sender_department,r.body reply_body,r.deleted_at reply_deleted,ru.name reply_name FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN messages r ON r.id=m.reply_to LEFT JOIN users ru ON ru.id=r.sender_id`;
@@ -119,7 +119,7 @@ function createChat(options = {}) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; worker-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     let url;
     try { url = new URL(req.url, `http://${req.headers.host}`); } catch { fail(400, 'Geçersiz adres.'); }
     if (!localNames.has(url.hostname.toLowerCase())) fail(403, 'Sunucu adı izinli değil. ALLOWED_HOSTS ayarını kontrol edin.');
@@ -348,9 +348,12 @@ function createChat(options = {}) {
     const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/auth.js': ['auth.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/brand-guide.css': ['brand-guide.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/selcuklu-motif.svg': ['selcuklu-motif.svg', 'image/svg+xml'], '/saricam-kurumsal-desen.png': ['saricam-kurumsal-desen.png', 'image/png'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
     files['/collaboration.js']=['collaboration.js','text/javascript'];
     files['/collaboration.css']=['collaboration.css','text/css'];
+    files['/file-preview.js']=['file-preview.js','text/javascript'];files['/file-preview.css']=['file-preview.css','text/css'];files['/office-preview-worker.js']=['office-preview-worker.js','text/javascript'];
+    for(const asset of require('./preview-assets.json').files){const extension=path.extname(asset.path);files['/'+asset.path]=[asset.path,extension==='.mjs'||extension==='.js'?'text/javascript':extension==='.txt'||extension===''?'text/plain':extension==='.ttf'?'font/ttf':'application/octet-stream'];}
     files['/fonts.css']=['fonts.css','text/css'];
     for(const name of require('./font-assets.cjs'))files['/fonts/'+name]=['fonts/'+name,name.endsWith('.woff2')?'font/woff2':'text/plain'];
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
+    if(route==='/office-preview-worker.js')res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; connect-src 'none'");
     const contentType=file[1].startsWith('text/')||file[1]==='image/svg+xml'?`${file[1]}; charset=utf-8`:file[1];
     res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-cache' });
     if (req.method === 'HEAD') res.end(); else res.end(fs.readFileSync(path.join(__dirname, 'public', file[0])));

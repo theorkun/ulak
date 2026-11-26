@@ -1,0 +1,4 @@
+# Keep audited vendor bytes and synthetic document fixtures identical on every platform.
+public/vendor/preview/** -text
+docs/vendor/preview/** -text
+tests/fixtures/preview/* -text
