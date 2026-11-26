@@ -6,7 +6,7 @@ for(const name of ['style.css','brand-guide.css','fonts.css','app.js','auth.js',
 fs.mkdirSync(path.join(out,'fonts'),{recursive:true});
 for(const name of require('../font-assets.cjs'))fs.copyFileSync(path.join(root,'public','fonts',name),path.join(out,'fonts',name));
 let html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
-html=html.replace(/(<script src="app\.js\?v=\d+" defer><\/script>)/,'<script src="browser-demo.js?v=21" defer></script>\n  $1');
+html=html.replace(/(<script src="app\.js\?v=\d+" defer><\/script>)/,'<script src="browser-demo.js?v=22" defer></script>\n  $1');
 html=html.replaceAll('href="/"','href="./"').replace('<title>Turkuaz Kurumsal İletişim · Kurum İletişim Alanı</title>','<title>Turkuaz Kurumsal İletişim · Tarayıcı Demosu</title>');
 fs.writeFileSync(path.join(out,'index.html'),html);
 const names=require('../department-catalog.cjs').names;

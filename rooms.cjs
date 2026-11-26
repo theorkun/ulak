@@ -36,9 +36,13 @@ function createRooms(db) {
     let row = db.prepare("SELECT * FROM conversations WHERE scope='general'").get();
     if (!row) {
       const old = db.prepare("SELECT id FROM conversations WHERE kind='group' AND scope='legacy' AND title IN ('Genel sohbet','Genel Alan') ORDER BY id LIMIT 1").get();
-      if (old) db.prepare("UPDATE conversations SET scope='general',title='Genel Alan',topic='Tüm müdürlüklerin ortak iletişim alanı' WHERE id=?").run(old.id);
-      else db.prepare("INSERT INTO conversations(kind,title,topic,creator_id,scope) VALUES('group','Genel Alan','Tüm müdürlüklerin ortak iletişim alanı',?,'general')").run(owner);
+      if (old) db.prepare("UPDATE conversations SET scope='general',title='Kurum Meydanı',topic='Tüm müdürlüklerin ortak iletişim alanı' WHERE id=?").run(old.id);
+      else db.prepare("INSERT INTO conversations(kind,title,topic,creator_id,scope) VALUES('group','Kurum Meydanı','Tüm müdürlüklerin ortak iletişim alanı',?,'general')").run(owner);
       row = db.prepare("SELECT * FROM conversations WHERE scope='general'").get();
+    }
+    if (row.title !== 'Kurum Meydanı') {
+      db.prepare("UPDATE conversations SET title=? WHERE id=?").run('Kurum Meydanı',row.id);
+      row.title='Kurum Meydanı';
     }
     return row;
   }

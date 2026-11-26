@@ -27,11 +27,11 @@ async function startPreview(options={}){
   const post=(id,sender,body,minutes)=>app.db.prepare('INSERT INTO messages(conversation_id,sender_id,body,client_id,created_at) VALUES(?,?,?,?,?)').run(id,sender,body,'preview-post-'+(++sequence),new Date(Date.now()-minutes*60000).toISOString());
   post(general,2,'Günaydın değerli çalışma arkadaşlarımız. Yeni dönem oryantasyon programı için müdürlüklerden gelecek personel listelerini cuma gününe kadar tamamlıyoruz. Katkılarınız için teşekkürler.',85);
   post(general,3,'Toplantı salonlarının haftalık kullanım planı güncellendi. Ortak alan taleplerinizi müdürlüğünüz üzerinden iletebilirsiniz.',65);
-  post(general,1,'Kurum içi iletişim alanımıza hoş geldiniz. Genel Alan tüm müdürlüklerin ortak gündemi için; müdürlük odaları ise kendi ekiplerimizin koordinasyonu için hazır.',42);
+  post(general,1,'Kurum içi iletişim alanımıza hoş geldiniz. Kurum Meydanı tüm müdürlüklerin ortak gündemi için; müdürlük odaları ise kendi ekiplerimizin koordinasyonu için hazır.',42);
   post(general,4,'Haftalık faaliyet özetlerini ortak takvime göre tamamlıyoruz. Müdürlükler arası ihtiyaç ve önerileri bu alanda paylaşabiliriz.',24);
   post(general,2,'Yarın saat 10.30’da yapılacak kurum içi bilgilendirme toplantısı için hazırlıklarımız tamamlandı. Tüm müdürlüklerin temsilcilerini bekliyoruz.',8);
   post(room('Bilgi İşlem Müdürlüğü'),5,'Sunucu bakım kontrollerini tamamladım. Destek taleplerini müdürlük alanımızda koordine edebiliriz.',30);
-  post(room('Bilgi İşlem Müdürlüğü'),1,'Teşekkürler Selin. Bugünkü test sonuçlarını burada paylaşalım; sonrasında kurum genelindeki bilgilendirmeyi Genel Alan’dan yaparız.',12);
+  post(room('Bilgi İşlem Müdürlüğü'),1,'Teşekkürler Selin. Bugünkü test sonuçlarını burada paylaşalım; sonrasında kurum genelindeki bilgilendirmeyi Kurum Meydanı’ndan yaparız.',12);
   post(room('İnsan Kaynakları ve Eğitim Müdürlüğü'),6,'Yeni başlayan personelin oryantasyon dosyaları hazır. Birim içi kontrol listesini tamamlıyorum.',25);
   post(room('İnsan Kaynakları ve Eğitim Müdürlüğü'),2,'Teşekkürler Esra. Personel listeleri son halini alınca birlikte gözden geçirelim.',11);
   post(room('Destek Hizmetleri Müdürlüğü'),7,'Toplantı salonu ve ortak alan hazırlıklarını bitirdik. Öğleden sonra son kontrolü yapacağım.',27);
