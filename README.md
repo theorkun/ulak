@@ -117,13 +117,25 @@ Sunucu bilgisayarı açık kalmalıdır. Güvenlik duvarı otomatik değiştiril
 - Hesap etkinleştirme/pasifleştirme, geçici parola yenileme ve yönetim işlem kayıtları
 - Mobil ekranlara uyarlanan portal ve giriş sayfası
 
+## Grup iletişimi geliştirmeleri
+
+- **Profil fotoğrafı:** Üstteki profil düğmesinden JPG/PNG seçilir. En fazla 5 MB kaynak görsel, tarayıcıda merkezden kare kırpılıp 256×256 JPEG olarak küçültülür; sunucu en fazla 150 KB kabul eder. Fotoğraf kaldırılabilir. Gerçek sunucuda oturum açmış aktif personele sunulur; belediye logosu değiştirilmez.
+- **Mesaj seçenekleri:** Kendi mesajınızda “Sil / Geri al” penceresi, bütün mesajlarda “Benden gizle” seçeneği vardır. Herkesten silme için zaman sınırı yoktur; yalnızca gönderen kendi mesajını geri alabilir. Eski sürümde yalnızca gizlenmiş içeriklere geriye dönük toplu silme uygulanmaz.
+- **Dosya paylaşımı:** Mesaj başına bir dosya; PDF, TXT, DOCX, XLSX, JPG ve PNG; en fazla 2 MB. Boş metinle dosya gönderilebilir. İndirme anında oturum ve müdürlük üyeliği doğrulanır. Dosyalar SQLite içinde tutulur ve standart yedeğe dahildir. İçerik imzası/tür kontrolü yapılır, otomatik indirme veya çalıştırma yapılmaz; antivirüs taraması eklenmiş değildir. Gönderen başına 100 MB, kurum genelinde 1 GB ek dosya sınırı ve dakikada 10 yükleme sınırı vardır.
+- **Sabitleme ve duyurular:** Yöneticiler eriştikleri odalarda en fazla 3 mesajı sabitleyebilir ve “Duyuru” seçerek mesaj gönderebilir. Katılımcı “Okudum” düğmesine basar; onay otomatik okundu işareti veya resmî tebligat değildir. Odaya erişebilenler onaylayanları görebilir.
+- **Etiketleme ve bildirimler:** “@Kişi” düğmesi katılımcının kullanıcı adını metne ekler; etiket vurgulanır. Bildirim ve ses tercihleri profilden açılır; her oda sessize alınabilir. Masaüstü bildirimi HTTPS/localhost, destekleyen tarayıcı ve kullanıcı izni gerektirir. Uygulama açık olmalıdır; bildirim içeriğinde mesaj metni gösterilmez. Özellik, kapalı uygulamaya push göndermez ve etiketler için ayrı bildirim kuralı içermez.
+- **Arama:** Sohbet, gönderen, başlangıç/bitiş tarihi ve dosyalı mesaj filtresi vardır; 60'ar sonuçla devam edilebilir. Tarih filtresi sunucudaki UTC mesaj tarihini kullanır. Benden gizlenen ve geri alınan mesajlar sonuçlarda çıkmaz.
+- **Taslak ve oturum:** Metin taslakları kullanıcı kimliğiyle ayrılarak yalnızca ilgili sekmenin sessionStorage alanına kaydedilir; yenilemede geri gelir ve çıkışta temizlenir. Ek dosyalar taslak olarak saklanmaz. Bildirim/sessize alma tercihleri localStorage'da tutulur. Profilden açık oturumlar görülebilir ve diğer oturumlar kapatılabilir. Sayfanın açık olması kişinin aktif olarak ekran başında olduğunu kanıtlamaz.
+- **Toplu personel:** Yönetim → CSV ile toplu personel ekle. UTF-8 CSV şablonu, noktalı virgül/virgül ayırıcı, önizleme ve kullanıcı/müdürlük doğrulaması desteklenir. Her seferinde en fazla 50 hesap, yalnızca personel yetkisiyle ve zorunlu ilk parola değişimiyle açılır. Bir satır hatalıysa hiçbir hesap eklenmez. Oluşturma sonrasında geçici parolalar yalnızca yönetim penceresi açıkken indirilebilir; pencere kapanınca listeden temizlenir. İndirilen dosyayı yetkili personel korumalıdır.
+- **Demo:** Aynı ekran akışları sentetik verilerle denenebilir. Hesaplar, mesajlar, fotoğraflar, ekler ve onaylar yenilemede sıfırlanır; tarayıcı tercihleri ve sekme taslakları yukarıdaki şekilde saklanır. Gerçek kurumsal verilerle denemeyin.
+
 ## Veri ve güvenlik sınırları
 
 - Parolalar scrypt ve rastgele tuzla özetlenir. Oturum çerezleri HttpOnly ve SameSite=Strict'tir. Değişiklik isteklerinde CSRF/kaynak kontrolü yapılır. Hesap kapatılınca veya parola değişince eski oturumlar geçersizleşir.
 - Varsayılan yerel/pilot bağlantı **HTTP**'dir; ağ trafiği şifrelenmez. Gerçek ve hassas kurumsal yazışmalardan önce BT tarafından güvenilir **HTTPS** yapılandırılmalıdır. Doğrudan TLS veya HTTPS reverse proxy kullanılabilir. Proxy SSE yanıtlarını tamponlamamalıdır.
 - Mesajlar SQLite veritabanında açık metindir. Sunucu dosyalarına erişebilen BT yöneticisi veritabanı içeriğine erişebilir. Uçtan uca şifreleme bulunmaz.
-- “Kaldır” paylaşımı uygulamada gizler; orijinal metin veritabanında kalır. Kurumsal veri imha/arşiv politikası bu sürümde uygulanmış değildir.
-- Dosya paylaşımı, ses/görüntülü görüşme, AD/SSO, arka plan push bildirimi ve çok sunuculu ölçekleme bu sürümde yoktur.
+- **Herkesten sil / Geri al**, gönderenin kendi mesajının metnini boşaltır; ek dosyayı ve okudum onaylarını canlı veritabanından kaldırır, sabitlemeyi iptal eder. Mesajın kimlik/zaman kaydı ve geri alındı işareti kalır. Daha önce okunmuş, indirilmiş veya kopyalanmış içerikler, SQLite WAL/disk kalıntıları ve eski yedekler bu işlemle geri alınmaz. **Benden gizle**, yalnızca ilgili hesabın mesaj listesini, son mesaj önizlemesini ve aramasını etkiler. Saklama takvimine bağlı otomatik imha henüz yoktur.
+- Ses/görüntülü görüşme, AD/SSO, uygulama kapalıyken arka plan push bildirimi ve çok sunuculu ölçekleme bu sürümde yoktur.
 - Hedef 50–200 personeldir. Yerel 200 canlı bağlantı testi, gerçek kurum ağı/donanımı üzerinde pilotun veya sızma testinin yerine geçmez.
 
 ## Ayarlar

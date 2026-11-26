@@ -2,11 +2,11 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'docs');
 fs.mkdirSync(out,{recursive:true});
-for(const name of ['style.css','brand-guide.css','fonts.css','app.js','auth.js','icon.svg','saricam-belediyesi-logo.png','selcuklu-motif.svg','saricam-kurumsal-desen.png'])fs.copyFileSync(path.join(root,'public',name),path.join(out,name));
+for(const name of ['style.css','brand-guide.css','collaboration.css','fonts.css','app.js','collaboration.js','auth.js','icon.svg','saricam-belediyesi-logo.png','selcuklu-motif.svg','saricam-kurumsal-desen.png'])fs.copyFileSync(path.join(root,'public',name),path.join(out,name));
 fs.mkdirSync(path.join(out,'fonts'),{recursive:true});
 for(const name of require('../font-assets.cjs'))fs.copyFileSync(path.join(root,'public','fonts',name),path.join(out,'fonts',name));
 let html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
-html=html.replace(/(<script src="app\.js\?v=\d+" defer><\/script>)/,'<script src="browser-demo.js?v=23" defer></script>\n  $1');
+html=html.replace(/(<script src="app\.js\?v=\d+" defer><\/script>)/,'<script src="browser-demo.js?v=24" defer></script>\n  $1');
 html=html.replaceAll('href="/"','href="./"').replace('<title>Turkuaz Kurumsal İletişim · Kurum İletişim Alanı</title>','<title>Turkuaz Kurumsal İletişim · Tarayıcı Demosu</title>');
 fs.writeFileSync(path.join(out,'index.html'),html);
 const names=require('../department-catalog.cjs').names;

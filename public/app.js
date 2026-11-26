@@ -20,12 +20,13 @@ async function api(route,data,method){
   if(!response.ok){if(response.status===401&&state.user)signOut();if(response.status===428&&state.user)passwordDialog();const e=new Error(result.error||'İşlem tamamlanamadı.');e.status=response.status;throw e;}return result;
 }
 function dialog(id){if(state.user?.mustChangePassword&&id!=='#profile-dialog')return;$$('dialog[open]').forEach(d=>d.close());returnFocus=document.activeElement;$(id).showModal();}
-function closeDialogs(){if(state.user?.mustChangePassword)return;$$('dialog[open]').forEach(d=>d.close());returnFocus?.focus();}
-$$('dialog').forEach(d=>{d.addEventListener('cancel',e=>{if(state.user?.mustChangePassword)e.preventDefault();});d.addEventListener('close',()=>{if(d.id==='credential-dialog'){$('#credential-value').textContent='';$('#credential-user').textContent='';}});});
+function closeDialogs(){if(state.importing){toast('Hesaplar oluşturuluyor; işlemin bitmesini bekleyin.');return;}if(state.user?.mustChangePassword)return;$$('dialog[open]').forEach(d=>d.close());returnFocus?.focus();}
+$$('dialog').forEach(d=>{d.addEventListener('cancel',e=>{if(state.user?.mustChangePassword||state.importing)e.preventDefault();});d.addEventListener('close',()=>{if(d.id==='credential-dialog'){$('#credential-value').textContent='';$('#credential-user').textContent='';}});});
 function profile(){
   if(!state.user)return;
   $('#profile-name').textContent=state.user.name;$('#profile-department').textContent=state.user.department;
-  $('#profile-avatar').textContent=initials(state.user.name);$('#admin-open').hidden=!['admin','super_admin'].includes(state.user.role);$('#profile-role').textContent=roleName(state.user.role);
+  $('#profile-avatar').innerHTML=avatarContent(state.user);$('#admin-open').hidden=!['admin','super_admin'].includes(state.user.role);$('#profile-role').textContent=roleName(state.user.role);
+  $('#announcement-option').hidden=!['admin','super_admin'].includes(state.user.role);
   $$('#user-form [name="role"] option').forEach(option=>{option.hidden=option.disabled=option.value!=='member'&&state.user.role!=='super_admin';});
 }
 async function boot(){
@@ -51,6 +52,7 @@ $('#auth-form').addEventListener('submit',async e=>{
 });
 async function enter(me){state.user=me.user;state.csrf=me.csrf;$('#auth-screen').hidden=true;$('#workspace').hidden=false;profile();if(state.user.mustChangePassword){passwordDialog();return;}await refresh(true);connect();if(!state.active){const room=state.rooms.find(r=>r.scope==='general')||state.rooms[0];if(room)await openRoom(room.id);}}
 function signOut(){
+  clearPrivateDrafts();clearAttachment();pendingSend=null;clearImport();
   clearTimeout(readTimer);markedReads.clear();
   $('#forgot-password').hidden=false;
   state.source?.close();state.source=null;state.user=null;state.csrf='';state.active=null;state.rooms=[];state.directory=[];state.messages=[];state.version++;state.drafts.clear();state.reply=null;state.edit=null;
@@ -65,7 +67,7 @@ function scheduleRefresh(value={}){
 }
 async function refresh(includeIdentity=false){
   const [rooms,me,directory]=await Promise.all([api('/api/conversations'),includeIdentity?api('/api/me'):Promise.resolve(null),includeIdentity?api('/api/directory'):Promise.resolve(null)]);if(!state.user)return;
-  state.rooms=rooms.conversations;if(directory)state.directory=directory.departments;if(me){state.user=me.user;state.csrf=me.csrf;profile();}
+  notifyNewMessages(state.rooms,rooms.conversations);state.rooms=rooms.conversations;if(directory)state.directory=directory.departments;if(me){state.user=me.user;state.csrf=me.csrf;profile();}
   if(state.active&&!state.rooms.some(r=>r.id===state.active)){state.active=null;state.messages=[];$('#message-feed').replaceChildren();const general=state.rooms.find(r=>r.scope==='general');if(general)await openRoom(general.id);}
   renderRooms();renderHeader();
 }
@@ -83,8 +85,10 @@ function renderHeader(){
   $('#chat-title').textContent=r.title;
   $('#chat-topic').textContent=r.scope==='general'?'Tüm kurum personeli':'Müdürlük personeli';
   $('#chat-subtitle').textContent=`${r.people.filter(p=>p.active).length} katılımcı`;
+  renderRoomExtras(r);
 }
 async function openRoom(id,around=null){
+  clearAttachment();
   clearTimeout(readTimer);state.loadingOlder=false;state.unreadMarker=0;state.unreadCount=0;
   if(state.active)state.drafts.set(state.active,$('#message-input').value);state.active=id;state.version++;state.messages=[];state.history=!!around;cancelReply();$('#message-input').value=state.drafts.get(id)||'';updateComposer();$('#welcome').hidden=true;$('#chat-section').hidden=false;$('#jump-latest').hidden=!around;renderRooms();renderHeader();$('#message-feed').innerHTML='<p class="empty-feed">Alan paylaşımları yükleniyor…</p>';
   try{await loadMessages(true,around);}catch(e){toast(e.message);}
@@ -105,7 +109,7 @@ function renderMessages(highlight){
     const date=day(m.createdAt),own=m.sender.id===state.user.id;
     let prefix=date!==previousDay?`<div class="chat-day"><span>${esc(date===day(new Date())?'Bugün':date)}</span></div>`:'';previousDay=date;
     if(m.id===state.unreadMarker)prefix+=`<div class="unread-divider"><span>${state.unreadCount} okunmamış mesaj</span></div>`;
-    return prefix+`<article id="message-${m.id}" class="post ${own?'own':''} ${m.deleted?'deleted':''} ${m.id===highlight?'highlight':''}"><header class="post-header"><span class="avatar">${esc(initials(m.sender.name))}</span><div class="post-author"><strong>${esc(own?'Siz':m.sender.name)}</strong><small>${esc(m.sender.department||'Kurum personeli')}</small></div></header>${m.reply?`<button class="post-quote" data-jump="${m.reply.id}"><strong>${esc(m.reply.name)}</strong><span>${esc(m.reply.body)}</span></button>`:''}<div class="post-body">${esc(m.deleted?'Bu mesaj kaldırıldı.':m.body)}</div><footer class="post-footer">${!m.deleted?`<button data-reply="${m.id}">Yanıtla</button>${own?`<button class="post-own-action" data-edit="${m.id}">Düzenle</button><button data-delete="${m.id}">Kaldır</button>`:''}`:''}<span class="message-meta">${m.editedAt?'<span>Düzenlendi</span>':''}<time datetime="${esc(m.createdAt)}" title="${esc(date)}">${clock(m.createdAt)}</time></span></footer></article>`;
+    return prefix+`<article id="message-${m.id}" class="post ${own?'own':''} ${m.deleted?'deleted':''} ${m.id===highlight?'highlight':''}"><header class="post-header"><span class="avatar">${avatarContent(m.sender)}</span><div class="post-author"><strong>${esc(own?'Siz':m.sender.name)}</strong><small>${esc(m.sender.department||'Kurum personeli')}</small></div>${m.pinned&&!m.deleted?'<span class="message-tag">Sabit</span>':''}${m.announcement&&!m.deleted?'<span class="message-tag">Duyuru</span>':''}</header>${m.reply?`<button class="post-quote" data-jump="${m.reply.id}"><strong>${esc(m.reply.name)}</strong><span>${esc(m.reply.body)}</span></button>`:''}<div class="post-body">${m.deleted?'Bu mesaj geri alındı.':messageText(m.body)}</div>${messageAttachment(m)}<footer class="post-footer">${messageActions(m,own)}<span class="message-meta">${m.editedAt&&!m.deleted?'<span>Düzenlendi</span>':''}<time datetime="${esc(m.createdAt)}" title="${esc(date)}">${clock(m.createdAt)}</time></span></footer></article>`;
   }).join('');
   if(!html)html='<p class="empty-feed">Henüz mesaj yok. İlk mesajı siz gönderin.</p>';if(state.more)html='<button id="load-older" class="older-messages">Daha eski mesajları yükle</button>'+html;$('#message-feed').innerHTML=html;
 }
@@ -116,19 +120,19 @@ $('#message-input').addEventListener('input',()=>{updateComposer();if(state.acti
 $('#message-input').addEventListener('keydown',e=>{const desktop=!window.matchMedia||window.matchMedia('(pointer:fine)').matches;if(e.key==='Enter'&&!e.isComposing&&(e.ctrlKey||e.metaKey||(desktop&&!e.shiftKey))){e.preventDefault();$('#message-form').requestSubmit();}});
 $('#cancel-reply').addEventListener('click',cancelReply);
 $('#message-form').addEventListener('submit',async e=>{
-  e.preventDefault();const body=$('#message-input').value.trim(),id=state.active;if(!body||!id||state.sending)return;const edited=state.edit,replyTo=state.reply?.id||null;
-  if(!pendingSend||pendingSend.id!==id||pendingSend.body!==body||pendingSend.replyTo!==replyTo)pendingSend={id,body,replyTo,clientId:[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('')};
-  state.sending=true;$('#send-message').disabled=true;
-  try{if(edited)await api('/api/messages/'+edited.id,{body},'PATCH');else await api(`/api/conversations/${id}/messages`,{body,clientId:pendingSend.clientId,replyTo});pendingSend=null;state.drafts.delete(id);if(id===state.active){$('#message-input').value='';cancelReply();updateComposer();state.history=false;$('#jump-latest').hidden=true;await loadMessages(true);}await refresh();}catch(error){toast(error.message);}finally{state.sending=false;$('#send-message').disabled=false;}
+  e.preventDefault();const body=$('#message-input').value.trim()||selectedAttachment?.name||'',id=state.active;if(!body||!id||state.sending)return;const edited=state.edit,replyTo=state.reply?.id||null;
+  const extra=composerExtras();if(!pendingSend||pendingSend.id!==id||pendingSend.body!==body||pendingSend.replyTo!==replyTo||pendingSend.attachment!==extra.attachment||pendingSend.announcement!==extra.announcement)pendingSend={id,body,replyTo,...extra,clientId:[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('')};
+  state.sending=true;$('#send-message').disabled=true;$('#send-message').textContent='Gönderiliyor…';let delivered=false;
+  try{if(edited)await api('/api/messages/'+edited.id,{body},'PATCH');else await api(`/api/conversations/${id}/messages`,{body,clientId:pendingSend.clientId,replyTo,...extra});delivered=true;pendingSend=null;state.drafts.delete(id);savePrivateDrafts();if(id===state.active){clearAttachment();$('#message-input').value='';cancelReply();updateComposer();state.history=false;$('#jump-latest').hidden=true;await loadMessages(true);}await refresh();}catch(error){toast(delivered?'Mesaj gönderildi; görünüm yenilenemedi. Yenile düğmesini kullanın.':'Gönderilemedi: '+error.message+' Mesajınız korunuyor; tekrar deneyebilirsiniz.');}finally{state.sending=false;$('#send-message').disabled=false;$('#send-message').textContent=state.edit?'Güncelle':'Gönder';}
 });
 $('#jump-latest').addEventListener('click',()=>{state.history=false;$('#jump-latest').hidden=true;loadMessages(true).catch(e=>toast(e.message));});
 $('.chat-timeline').addEventListener('scroll',()=>{clearTimeout(readTimer);if(state.user&&state.active&&!state.history&&nearLatest()){$('#jump-latest').hidden=true;readTimer=setTimeout(()=>{if(state.user&&!state.history&&nearLatest()&&document.visibilityState==='visible')markRead().catch(e=>toast(e.message));},180);}});
 $('#chat-filter').addEventListener('input',renderRooms);$('#refresh').addEventListener('click',()=>scheduleRefresh({kind:'directory',conversationId:state.active}));
-function roomDetails(){const r=state.rooms.find(r=>r.id===state.active);if(!r)return;$('#detail-title').textContent=r.title+' · Katılımcılar';$('#detail-content').innerHTML=`<p class="muted small">${r.scope==='general'?'Tüm müdürlüklerin personeli bu alana erişebilir.':'Bu alana yalnızca ilgili müdürlüğün personeli erişebilir.'}</p>`+r.people.filter(p=>p.active).map(p=>`<div class="detail-person"><span class="avatar">${esc(initials(p.name))}</span><div>${esc(p.name)}${p.id===state.user.id?' (Siz)':''}<small>${esc(p.department)}</small></div></div>`).join('');dialog('#detail-dialog');}
+function roomDetails(){const r=state.rooms.find(r=>r.id===state.active);if(!r)return;$('#detail-title').textContent=r.title+' · Katılımcılar';$('#detail-content').innerHTML=`<p class="muted small">${r.scope==='general'?'Tüm müdürlüklerin personeli bu alana erişebilir.':'Bu alana yalnızca ilgili müdürlüğün personeli erişebilir.'}</p>`+r.people.filter(p=>p.active).map(p=>`<div class="detail-person"><span class="avatar">${avatarContent(p)}</span><div>${esc(p.name)}${p.id===state.user.id?' (Siz)':''}<small>${esc(p.department)}</small></div></div>`).join('');dialog('#detail-dialog');}
 ['#chat-details'].forEach(s=>$(s).addEventListener('click',roomDetails));
-$('#global-search').addEventListener('click',()=>{$('#search-results').replaceChildren();$('#message-search').value='';dialog('#search-dialog');$('#message-search').focus();});
-$('#search-form').addEventListener('submit',async e=>{e.preventDefault();$('#search-results').textContent='Aranıyor…';try{const result=await api('/api/search?q='+encodeURIComponent($('#message-search').value.trim()));$('#search-results').innerHTML=result.messages.length?result.messages.map(m=>`<button class="search-result" data-result="${m.id}" data-room="${m.conversationId}"><strong>${esc(state.rooms.find(r=>r.id===m.conversationId)?.title||'Alan')} · ${esc(m.sender.name)}</strong><p>${esc(m.body.slice(0,500))}</p><small>${esc(day(m.createdAt))} ${clock(m.createdAt)}</small></button>`).join(''):'<p class="muted">Erişebildiğiniz alanlarda sonuç bulunamadı.</p>';}catch(error){$('#search-results').textContent=error.message;}});
-function passwordDialog(){$('#password-form').reset();$('#password-error').textContent='';$('#password-note').textContent=state.user.mustChangePassword?'Alanlara erişmeden önce geçici parolanızı değiştirin.':`${state.user.name} · ${state.user.department}`;$('#profile-dialog [data-close]').hidden=state.user.mustChangePassword;dialog('#profile-dialog');}
+$('#global-search').addEventListener('click',()=>{$('#search-results').replaceChildren();$('#message-search').value='';prepareSearch();dialog('#search-dialog');$('#message-search').focus();});
+$('#search-form').addEventListener('submit',async e=>{e.preventDefault();await runAdvancedSearch(false);});
+function passwordDialog(){$('#password-form').reset();$('#password-error').textContent='';$('#password-note').textContent=state.user.mustChangePassword?'Alanlara erişmeden önce geçici parolanızı değiştirin.':`${state.user.name} · ${state.user.department}`;$('#profile-dialog [data-close]').hidden=state.user.mustChangePassword;prepareProfile();dialog('#profile-dialog');}
 ['#profile-open'].forEach(s=>$(s).addEventListener('click',passwordDialog));
 $('#password-form').addEventListener('submit',async e=>{e.preventDefault();$('#password-error').textContent='';if($('#new-password').value!==$('#repeat-password').value){$('#password-error').textContent='Yeni parolalar eşleşmiyor.';return;}const button=e.target.querySelector('[type=submit]');button.disabled=true;state.source?.close();try{const me=await api('/api/password',{currentPassword:$('#current-password').value,password:$('#new-password').value});state.user=me.user;state.csrf=me.csrf;closeDialogs();$('#password-form').reset();await enter(me);toast('Parolanız güncellendi. Diğer oturumlar kapatıldı.');}catch(error){$('#password-error').textContent=error.message;if(state.user&&!state.user.mustChangePassword)connect();}finally{button.disabled=false;}});
 function departmentOptions(selected){return state.departments.map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');}
@@ -146,7 +150,7 @@ async function adminPanel(){
     const [people,depts,audit]=await Promise.all([api('/api/admin/users'),api('/api/admin/departments'),api('/api/admin/audit')]);state.adminUsers=people.users;state.departments=depts.departments;
     $('#user-department').innerHTML=departmentOptions(state.user.departmentId);$('#department-list').innerHTML=state.departments.map(d=>`<span class="department-tag">${esc(d.name)} · ${d.people} personel</span>`).join('');
     renderAdminUsers();
-    const labels={role_changed:'Kullanıcı yetkisi değişti',contact_changed:'İletişim bilgileri değişti',password_recovered:'Parola kurtarıldı',recovery_delivery_failed:'Kurtarma iletisi gönderilemedi',setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
+    const labels={message_recalled:'Mesaj geri alındı',message_pinned:'Mesaj sabitlendi',message_unpinned:'Mesaj sabitlemesi kaldırıldı',avatar_changed:'Profil fotoğrafı değişti',avatar_removed:'Profil fotoğrafı kaldırıldı',sessions_revoked:'Diğer oturumlar kapatıldı',role_changed:'Kullanıcı yetkisi değişti',contact_changed:'İletişim bilgileri değişti',password_recovered:'Parola kurtarıldı',recovery_delivery_failed:'Kurtarma iletisi gönderilemedi',setup:'İlk kurulum',user_created:'Personel hesabı açıldı',user_enabled:'Hesap etkinleştirildi',user_disabled:'Hesap kapatıldı',password_reset:'Parola sıfırlandı',password_changed:'Parola değiştirildi',department_created:'Müdürlük tanımlandı',department_changed:'Müdürlük ataması değişti',conversation_created:'Eski sohbet kaydı'};
     $('#audit-list').innerHTML=audit.entries.map(a=>`<div class="audit-entry">${esc(day(a.created_at))} ${clock(a.created_at)} · ${esc(a.actor||'Sistem')} · ${esc(labels[a.action]||a.action)} · Kayıt ${esc(a.target)}</div>`).join('');
   }catch(error){$('#admin-error').textContent=error.message;}
 }
@@ -163,7 +167,7 @@ document.addEventListener('click',async e=>{
     const result=e.target.closest('[data-result]');if(result){closeDialogs();await openRoom(Number(result.dataset.room),Number(result.dataset.result));}
     const reply=e.target.closest('[data-reply]'),edit=e.target.closest('[data-edit]');
     if(reply||edit){const m=state.messages.find(m=>m.id===Number((reply||edit).dataset[reply?'reply':'edit']));if(!m)return;state.reply=edit?null:m;state.edit=edit?m:null;$('#reply-preview').hidden=false;$('#reply-label').textContent=edit?'Mesajı düzenliyorsunuz':m.sender.name+' mesajına yanıt';$('#reply-text').textContent=m.body;if(edit){$('#message-input').value=m.body;$('#composer-title').textContent='Mesajı düzenle';$('#send-message').textContent='Güncelle';updateComposer();}$('#message-input').focus({preventScroll:true});}
-    const remove=e.target.closest('[data-delete]');if(remove&&confirm('Kendi paylaşımınızı bu alandan kaldırmak istiyor musunuz?')){await api('/api/messages/'+remove.dataset.delete,null,'DELETE');await loadMessages(false);await refresh();}
+    const remove=e.target.closest('[data-delete]');if(remove)openDeleteMessage(Number(remove.dataset.delete));
     const jump=e.target.closest('[data-jump]');if(jump)await openRoom(state.active,Number(jump.dataset.jump));
     const assign=e.target.closest('[data-assign-save]');if(assign){const id=Number(assign.dataset.assignSave),departmentId=Number($(`[data-assignment="${id}"]`).value);await api('/api/admin/users/'+id,{departmentId},'PATCH');await refresh(true);await adminPanel();toast('Müdürlük erişimi güncellendi.');}
     const toggle=e.target.closest('[data-toggle-user]');if(toggle){const u=state.adminUsers.find(u=>u.id===Number(toggle.dataset.toggleUser));if(u&&confirm(`${u.name} hesabı ${u.active?'pasife alınsın':'etkinleştirilsin'} mı?`)){await api('/api/admin/users/'+u.id,{active:!u.active},'PATCH');await adminPanel();await refresh(true);}}
@@ -172,4 +176,5 @@ document.addEventListener('click',async e=>{
   }catch(error){toast(error.message);}
 });
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.user&&!state.user.mustChangePassword)scheduleRefresh({kind:'directory',conversationId:state.active});});
+initCollaboration();
 boot();

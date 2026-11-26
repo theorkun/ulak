@@ -8,11 +8,12 @@ const { promisify } = require('node:util');
 const { DatabaseSync } = require('node:sqlite');
 const { createRooms } = require('./rooms.cjs');
 const { createRecovery, contacts } = require('./recovery.cjs');
+const collaboration = require('./collaboration.cjs');
 const scrypt = promisify(crypto.scrypt);
 const fold = value => String(value).toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
 const userRole = u => u.is_super_admin ? 'super_admin' : u.role;
-const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, departmentId: u.department_id, role: userRole(u), active: !!u.active, mustChangePassword: !!u.must_change });
+const publicUser = u => ({ id: u.id, username: u.username, name: u.name, department: u.department, departmentId: u.department_id, role: userRole(u), active: !!u.active, mustChangePassword: !!u.must_change, avatarUrl:u.avatar_version?`/api/avatars/${u.id}?v=${u.avatar_version}`:'' });
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 const text = (value, min, max, label) => {
   if (typeof value !== 'string' || value.trim().length < min || value.trim().length > max) fail(400, `${label}: ${min}–${max} karakter kullanın.`);
@@ -47,6 +48,7 @@ function createChat(options = {}) {
     CREATE INDEX IF NOT EXISTS messages_chat ON messages(conversation_id,id);
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor_id INTEGER REFERENCES users(id), action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));`);
   if(!db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='is_super_admin'))db.exec('ALTER TABLE users ADD COLUMN is_super_admin INTEGER NOT NULL DEFAULT 0 CHECK(is_super_admin IN (0,1))');
+  collaboration.install(db);
   db.function('fold', { deterministic: true }, fold);
   const rooms = createRooms(db);
   const setupToken = options.setupToken || crypto.randomBytes(24).toString('hex');
@@ -82,9 +84,10 @@ function createChat(options = {}) {
   }
   const online = userId => [...clients].some(c => c.userId === userId);
   function messageRow(row) {
-    return { id: row.id, conversationId: row.conversation_id, sender: { id: row.sender_id, name: row.name, department:row.sender_department }, body: row.deleted_at ? '' : row.body, createdAt: row.created_at, editedAt: row.edited_at, deleted: !!row.deleted_at, reply: row.reply_to ? { id: row.reply_to, body: row.reply_deleted ? 'Silinen mesaj' : row.reply_body, name: row.reply_name } : null };
+    const attachment=row.deleted_at?null:db.prepare('SELECT name,length(bytes) size FROM attachments WHERE message_id=?').get(row.id);
+    return { id: row.id, conversationId: row.conversation_id, sender: { id: row.sender_id, name: row.name, department:row.sender_department,avatarUrl:row.avatar_version?`/api/avatars/${row.sender_id}?v=${row.avatar_version}`:'' }, body: row.deleted_at ? '' : row.body, createdAt: row.created_at, editedAt: row.edited_at, deleted: !!row.deleted_at,pinned:!!row.pinned,announcement:!!row.announcement,acknowledgements:row.deleted_at?0:db.prepare('SELECT count(*) n FROM acknowledgements WHERE message_id=?').get(row.id).n,acknowledged:!!(row.viewer_id&&db.prepare('SELECT 1 FROM acknowledgements WHERE message_id=? AND user_id=?').get(row.id,row.viewer_id)),attachment:attachment?{...attachment,url:`/api/attachments/${row.id}`} : null, reply: row.reply_to ? { id: row.reply_to, body: row.reply_deleted ? 'Silinen mesaj' : row.reply_body, name: row.reply_name } : null };
   }
-  const messageSelect = `SELECT m.*,u.name,u.department sender_department,r.body reply_body,r.deleted_at reply_deleted,ru.name reply_name FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN messages r ON r.id=m.reply_to LEFT JOIN users ru ON ru.id=r.sender_id`;
+  const messageSelect = `SELECT m.*,u.name,u.avatar_version,u.department sender_department,r.body reply_body,r.deleted_at reply_deleted,ru.name reply_name FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN messages r ON r.id=m.reply_to LEFT JOIN users ru ON ru.id=r.sender_id`;
   function session(req) {
     const token = String(req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('kn_session='))?.slice(11);
     if (!token || token.length > 200) fail(401, 'Oturum açmanız gerekiyor.');
@@ -93,22 +96,25 @@ function createChat(options = {}) {
     if (!row) fail(401, 'Oturumunuz sona erdi. Yeniden giriş yapın.');
     return row;
   }
-  function issueSession(res, userId) {
+  function issueSession(res, userId, req) {
     const token = crypto.randomBytes(32).toString('hex'), csrf = crypto.randomBytes(24).toString('hex');
     db.prepare('INSERT INTO sessions(token,user_id,csrf,expires) VALUES(?,?,?,?)').run(hashToken(token), userId, csrf, now() + sessionMs);
+    db.prepare('UPDATE sessions SET created_at=?,agent=? WHERE token=?').run(now(),String(req?.headers['user-agent']||'Bilinmeyen tarayıcı').slice(0,250),hashToken(token));
     res.setHeader('Set-Cookie', `kn_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionMs / 1000)}${secure ? '; Secure' : ''}`);
     return csrf;
   }
   const json = (res, status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
-  async function body(req) {
+  async function body(req,maxBytes=24000) {
     if (!String(req.headers['content-type'] || '').startsWith('application/json')) fail(415, 'JSON içeriği bekleniyor.');
-    let size = 0, data = '';
-    for await (const chunk of req) { size += chunk.length; if (size > 24000) fail(413, 'İstek çok büyük.'); data += chunk; }
-    try { const value = JSON.parse(data); if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(); return value; } catch { fail(400, 'Geçersiz istek.'); }
+    let size = 0; const chunks=[];
+    for await (const chunk of req) { size += chunk.length; if (size > maxBytes) fail(413, 'İstek çok büyük.'); chunks.push(Buffer.from(chunk)); }
+    try { const value = JSON.parse(Buffer.concat(chunks).toString('utf8')); if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(); return value; } catch { fail(400, 'Geçersiz istek.'); }
   }
   const admin = user => { if (user.role !== 'admin') fail(403, 'Bu işlem yönetici yetkisi gerektirir.'); };
   const manageUser = (actor,target) => {if(!actor.is_super_admin&&(target.role==='admin'||target.is_super_admin))fail(403,'Yönetici hesaplarını yalnızca süper admin düzenleyebilir.');};
   const recovery=createRecovery({db,options,limited,passwordHash,audit,transaction,endSessions:id=>{for(const c of clients)if(c.userId===id)c.res.end();}});
+  const collaborationRoute=collaboration.createCollaboration({db,body,session,member,json,fail,event,audit,limited,clients,publicUser});
+  const staffImport=require('./staff-import.cjs')({db,body,session,admin,fail,text,contacts,passwordHash,transaction,rooms,publicUser,audit,event,json});
   async function handle(req, res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
@@ -141,7 +147,7 @@ function createChat(options = {}) {
         rooms.sync(id);
         audit(id, 'setup', id); return id;
       });
-      return json(res, 201, { user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(userId)), csrf: issueSession(res, userId) });
+      return json(res, 201, { user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(userId)), csrf: issueSession(res, userId, req) });
     }
     if (route === '/api/login' && req.method === 'POST') {
       limited(`login-ip:${req.socket.remoteAddress}`, 30, 15 * 60000);
@@ -151,7 +157,7 @@ function createChat(options = {}) {
       const fake = '0123456789abcdef0123456789abcdef:' + '00'.repeat(64);
       if (!await passwordMatches(input.password, user?.password || fake) || !user) fail(401, 'Kullanıcı adı veya parola hatalı.');
       limits.delete(`login-name:${username}`);
-      return json(res, 200, { user: publicUser(user), csrf: issueSession(res, user.id) });
+      return json(res, 200, { user: publicUser(user), csrf: issueSession(res, user.id, req) });
     }
     if (route.startsWith('/api/')) {
       const user = session(req);
@@ -172,9 +178,11 @@ function createChat(options = {}) {
         session(req);
         transaction(() => { db.prepare('UPDATE users SET password=?,must_change=0 WHERE id=?').run(password, user.id); recovery.invalidate(user.id); db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id); audit(user.id, 'password_changed', user.id); });
         for (const c of clients) if (c.userId === user.id) c.res.end();
-        return json(res, 200, { ok: true, csrf: issueSession(res, user.id), user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(user.id)) });
+        return json(res, 200, { ok: true, csrf: issueSession(res, user.id, req), user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(user.id)) });
       }
       if (user.must_change) fail(428, 'Devam etmeden önce geçici parolanızı değiştirin.');
+      if(await collaborationRoute(req,res,url,user))return;
+      if(route==='/api/admin/import'&&req.method==='POST'){limited('import:'+user.id,4,60000);return staffImport(req,res,user);}
       if (route === '/api/users' && req.method === 'GET') {
         const users = db.prepare('SELECT id,username,name,department,role,active,is_super_admin FROM users WHERE active=1 AND (department_id=? OR id=?) ORDER BY name').all(user.department_id,user.id);
         return json(res, 200, { users: users.map(u => {const {is_super_admin,...person}=u;return{...person,role:userRole(u),online:online(u.id)};}) });
@@ -247,9 +255,9 @@ function createChat(options = {}) {
       if (route === '/api/admin/audit' && req.method === 'GET') { admin(user); return json(res, 200, { entries: db.prepare('SELECT a.*,u.name actor FROM audit a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.id DESC LIMIT 100').all() }); }
       if (route === '/api/conversations' && req.method === 'GET') {
         const rows = db.prepare(`SELECT c.*,l.id latest_id,l.sender_id last_sender,l.body last_body,l.deleted_at last_deleted,l.created_at last_created,l.edited_at last_edited,lu.name last_name,
-          (SELECT count(*) FROM messages WHERE conversation_id=c.id AND id>mem.last_read AND sender_id!=? AND deleted_at IS NULL) unread
-          FROM conversations c JOIN members mem ON mem.conversation_id=c.id LEFT JOIN messages l ON l.id=(SELECT max(id) FROM messages WHERE conversation_id=c.id) LEFT JOIN users lu ON lu.id=l.sender_id WHERE mem.user_id=? AND c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) ORDER BY c.scope DESC,c.id`).all(user.id,user.id,user.department_id);
-        const allPeople = db.prepare('SELECT m.conversation_id,u.id,u.name,u.department,u.active FROM members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id IN (SELECT conversation_id FROM members WHERE user_id=?)').all(user.id);
+          (SELECT count(*) FROM messages WHERE conversation_id=c.id AND id>mem.last_read AND sender_id!=? AND deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=messages.id AND h.user_id=mem.user_id)) unread
+          FROM conversations c JOIN members mem ON mem.conversation_id=c.id LEFT JOIN messages l ON l.id=(SELECT max(id) FROM messages WHERE conversation_id=c.id AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=messages.id AND h.user_id=mem.user_id)) LEFT JOIN users lu ON lu.id=l.sender_id WHERE mem.user_id=? AND c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) ORDER BY c.scope DESC,c.id`).all(user.id,user.id,user.department_id);
+        const allPeople = db.prepare('SELECT m.conversation_id,u.id,u.username,u.name,u.department,u.active,u.avatar_version FROM members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id IN (SELECT conversation_id FROM members WHERE user_id=?)').all(user.id);
         const peopleByChat = new Map();
         for (const person of allPeople) { const id = person.conversation_id; delete person.conversation_id; if (!peopleByChat.has(id)) peopleByChat.set(id, []); peopleByChat.get(id).push(person); }
         const connected = new Set([...clients].filter(c => !c.res.writableEnded && !c.res.destroyed).map(c => c.userId));
@@ -257,7 +265,8 @@ function createChat(options = {}) {
           const people = peopleByChat.get(c.id) || [];
           const other = people.find(p => p.id !== user.id);
           const latest = c.latest_id ? { id: c.latest_id, sender: { id: c.last_sender, name: c.last_name }, body: c.last_deleted ? '' : c.last_body, deleted: !!c.last_deleted, createdAt: c.last_created, editedAt: c.last_edited } : null;
-          return { id: c.id, kind:'group',scope:c.scope,departmentId:c.department_id,title:c.title,topic:c.topic,creatorId:c.creator_id,people:people.map(p=>({...p,online:connected.has(p.id)})),unread:c.unread,lastMessage:latest };
+          const pins=db.prepare(`${messageSelect} WHERE m.conversation_id=? AND m.pinned=1 AND m.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=m.id AND h.user_id=?) ORDER BY m.id DESC LIMIT 3`).all(c.id,user.id).map(row=>messageRow({...row,viewer_id:user.id}));
+          return { id: c.id, kind:'group',scope:c.scope,departmentId:c.department_id,title:c.title,topic:c.topic,creatorId:c.creator_id,people:people.map(p=>({...p,avatar_version:undefined,avatarUrl:p.avatar_version?`/api/avatars/${p.id}?v=${p.avatar_version}`:'',online:connected.has(p.id)})),unread:c.unread,lastMessage:latest,pins };
         }); return json(res, 200, { conversations });
       }
       if (route === '/api/conversations' && req.method === 'POST') {
@@ -266,24 +275,33 @@ function createChat(options = {}) {
       match = route.match(/^\/api\/conversations\/(\d+)\/messages$/);
       if (match && req.method === 'GET') {
         const id = Number(match[1]); member(user.id, id);
+        const visible=` AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=m.id AND h.user_id=${user.id})`;
         const before = Number(url.searchParams.get('before') || 0), around = Number(url.searchParams.get('around') || 0);
         if (!Number.isSafeInteger(before) || !Number.isSafeInteger(around) || before < 0 || around < 0 || before && around) fail(400, 'Geçersiz sayfalama.');
         let rows;
         if (around) {
-          rows = [...db.prepare(`${messageSelect} WHERE m.conversation_id=? AND m.id<=? ORDER BY m.id DESC LIMIT 26`).all(id, around).reverse(), ...db.prepare(`${messageSelect} WHERE m.conversation_id=? AND m.id>? ORDER BY m.id LIMIT 25`).all(id, around)];
-        } else rows = db.prepare(`${messageSelect} WHERE m.conversation_id=? ${before ? 'AND m.id<?' : ''} ORDER BY m.id DESC LIMIT 50`).all(...(before ? [id, before] : [id])).reverse();
-        return json(res, 200, { messages: rows.map(messageRow), hasMore: rows.length ? !!db.prepare('SELECT id FROM messages WHERE conversation_id=? AND id<? LIMIT 1').get(id, rows[0].id) : false });
+          rows = [...db.prepare(`${messageSelect} WHERE m.conversation_id=? AND m.id<=? ${visible} ORDER BY m.id DESC LIMIT 26`).all(id, around).reverse(), ...db.prepare(`${messageSelect} WHERE m.conversation_id=? AND m.id>? ${visible} ORDER BY m.id LIMIT 25`).all(id, around)];
+        } else rows = db.prepare(`${messageSelect} WHERE m.conversation_id=? ${before ? 'AND m.id<?' : ''} ${visible} ORDER BY m.id DESC LIMIT 50`).all(...(before ? [id, before] : [id])).reverse();
+        rows=rows.filter(row=>!db.prepare('SELECT 1 FROM hidden_messages WHERE user_id=? AND message_id=?').get(user.id,row.id));
+        return json(res, 200, { messages: rows.map(row=>messageRow({...row,viewer_id:user.id})), hasMore: rows.length ? !!db.prepare('SELECT id FROM messages m WHERE conversation_id=? AND id<? AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=m.id AND h.user_id=?) LIMIT 1').get(id, rows[0].id,user.id) : false });
       }
       if (match && req.method === 'POST') {
         const id = Number(match[1]); member(user.id, id); limited(`send:${user.id}`, 60, 60000);
-        const input = await body(req), content = text(input.body, 1, 4000, 'Mesaj'), clientId = text(input.clientId, 8, 80, 'İstek kimliği');
+        const input = await body(req,2900000), content = text(input.body, 1, 4000, 'Mesaj'), clientId = text(input.clientId, 8, 80, 'İstek kimliği');
+        session(req);member(user.id,id);
+        const attachment=input.attachment?collaboration.decodeFile(input.attachment):null;
+        if(attachment)limited(`upload:${user.id}`,10,60000);
+        if(input.announcement&&!['admin','super_admin'].includes(userRole(user)))fail(403,'Duyuru için yönetici yetkisi gerekli.');
         const duplicate = db.prepare('SELECT id,conversation_id FROM messages WHERE sender_id=? AND client_id=?').get(user.id, clientId);
         if (duplicate) { if (duplicate.conversation_id !== id) fail(409, 'İstek kimliği daha önce kullanıldı.'); return json(res, 200, { id: duplicate.id }); }
+        if(attachment){const usage=db.prepare('SELECT coalesce(sum(length(a.bytes)),0) total,coalesce(sum(CASE WHEN m.sender_id=? THEN length(a.bytes) ELSE 0 END),0) personal FROM attachments a JOIN messages m ON m.id=a.message_id').get(user.id);if(usage.personal+attachment.bytes.length>100*1024*1024||usage.total+attachment.bytes.length>1024*1024*1024)fail(413,'Dosya depolama sınırı dolu. Kurum yöneticisine başvurun.');}
         const reply = input.replyTo == null ? null : Number(input.replyTo);
         if (reply !== null && (!Number.isSafeInteger(reply) || reply <= 0)) fail(400, 'Geçersiz yanıt mesajı.');
         if (reply && !db.prepare('SELECT id FROM messages WHERE id=? AND conversation_id=?').get(reply, id)) fail(400, 'Yanıtlanan mesaj bu sohbette bulunamadı.');
         const messageId = transaction(() => {
           const mid = Number(db.prepare('INSERT INTO messages(conversation_id,sender_id,body,client_id,reply_to) VALUES(?,?,?,?,?)').run(id, user.id, content, clientId, reply).lastInsertRowid);
+          if(attachment)db.prepare('INSERT INTO attachments(message_id,name,type,bytes) VALUES(?,?,?,?)').run(mid,attachment.name,attachment.type,attachment.bytes);
+          if(input.announcement)db.prepare('UPDATE messages SET announcement=1 WHERE id=?').run(mid);
           db.prepare('UPDATE members SET last_read=? WHERE conversation_id=? AND user_id=?').run(mid, id, user.id); return mid;
         }); event({ kind: 'message', conversationId: id }, id); return json(res, 201, { id: messageId });
       }
@@ -298,14 +316,20 @@ function createChat(options = {}) {
         const id = Number(match[1]), message = db.prepare('SELECT * FROM messages WHERE id=?').get(id);
         if (!message || message.sender_id !== user.id || message.deleted_at) fail(404, 'Mesaj bulunamadı veya düzenleme yetkiniz yok.');
         member(user.id, message.conversation_id);
-        if (req.method === 'PATCH') { const input = await body(req); db.prepare("UPDATE messages SET body=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(text(input.body, 1, 4000, 'Mesaj'), id); }
-        else db.prepare("UPDATE messages SET deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(id);
+        if (req.method === 'PATCH') { const input = await body(req);session(req);member(user.id,message.conversation_id); const result=db.prepare("UPDATE messages SET body=?,edited_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND deleted_at IS NULL").run(text(input.body, 1, 4000, 'Mesaj'), id);if(!result.changes)fail(404,'Mesaj geri alınmış; düzenlenemez.'); }
+        else transaction(()=>{db.prepare("UPDATE messages SET body='',pinned=0,deleted_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(id);db.prepare('DELETE FROM attachments WHERE message_id=?').run(id);db.prepare('DELETE FROM acknowledgements WHERE message_id=?').run(id);audit(user.id,'message_recalled',id);});
         event({ kind: 'message', conversationId: message.conversation_id }, message.conversation_id); return json(res, 200, { ok: true });
       }
       if (route === '/api/search' && req.method === 'GET') {
         limited(`search:${user.id}`, 60, 60000); const query = text(url.searchParams.get('q'), 2, 100, 'Arama');
-        const rows = db.prepare(`${messageSelect} JOIN members mem ON mem.conversation_id=m.conversation_id AND mem.user_id=? JOIN conversations c ON c.id=m.conversation_id WHERE c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) AND m.deleted_at IS NULL AND instr(fold(m.body),fold(?))>0 ORDER BY m.id DESC LIMIT 60`).all(user.id,user.department_id,query);
-        return json(res, 200, { messages: rows.map(messageRow) });
+        const params=[user.id,user.department_id,query];let filters='';
+        for(const [key,column]of [['room','m.conversation_id'],['sender','m.sender_id']]){const value=url.searchParams.get(key);if(value){if(!/^\d+$/.test(value))fail(400,'Geçersiz arama filtresi.');filters+=` AND ${column}=?`;params.push(Number(value));}}
+        for(const [key,operator]of [['from','>='],['to','<=']]){const value=url.searchParams.get(key);if(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value)))fail(400,'Geçersiz tarih.');filters+=` AND date(m.created_at)${operator}?`;params.push(value);}}
+        if(url.searchParams.get('files')==='1')filters+=' AND EXISTS(SELECT 1 FROM attachments a WHERE a.message_id=m.id)';
+        filters+=` AND NOT EXISTS(SELECT 1 FROM hidden_messages h WHERE h.message_id=m.id AND h.user_id=${user.id})`;
+        const before=Number(url.searchParams.get('before')||0);if(before){if(!Number.isSafeInteger(before)||before<1)fail(400,'Geçersiz sayfalama.');filters+=' AND m.id<?';params.push(before);}
+        const rows = db.prepare(`${messageSelect} JOIN members mem ON mem.conversation_id=m.conversation_id AND mem.user_id=? JOIN conversations c ON c.id=m.conversation_id WHERE c.kind='group' AND (c.scope='general' OR (c.scope='department' AND c.department_id=?)) AND m.deleted_at IS NULL AND instr(fold(m.body),fold(?))>0 ${filters} ORDER BY m.id DESC LIMIT 61`).all(...params);
+        return json(res, 200, { messages: rows.slice(0,60).map(row=>messageRow({...row,viewer_id:user.id})),hasMore:rows.length>60 });
       }
       if (route === '/api/events' && req.method === 'GET') {
         if ([...clients].filter(c => c.userId === user.id).length >= 4) fail(429, 'Aynı hesapla en fazla 4 canlı sekme açabilirsiniz.');
@@ -322,6 +346,8 @@ function createChat(options = {}) {
     }
     if (!['GET', 'HEAD'].includes(req.method)) fail(405, 'Yöntem desteklenmiyor.');
     const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/auth.js': ['auth.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/brand-guide.css': ['brand-guide.css', 'text/css'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/selcuklu-motif.svg': ['selcuklu-motif.svg', 'image/svg+xml'], '/saricam-kurumsal-desen.png': ['saricam-kurumsal-desen.png', 'image/png'], '/saricam-belediyesi-logo.png': ['saricam-belediyesi-logo.png', 'image/png'] };
+    files['/collaboration.js']=['collaboration.js','text/javascript'];
+    files['/collaboration.css']=['collaboration.css','text/css'];
     files['/fonts.css']=['fonts.css','text/css'];
     for(const name of require('./font-assets.cjs'))files['/fonts/'+name]=['fonts/'+name,name.endsWith('.woff2')?'font/woff2':'text/plain'];
     const file = files[route]; if (!file) fail(404, 'Sayfa bulunamadı.');
