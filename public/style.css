@@ -166,4 +166,12 @@ input:focus,select:focus,textarea:focus{outline-color:#008c9525;border-color:var
 .locked-room small{display:none}.locked-room .room-nav-icon{width:18px;height:18px}
 @media(max-width:1100px){.workspace{grid-template-columns:265px minmax(0,1fr)}.masthead>.brand{width:213px}.chat-timeline{padding:20px}.message-feed .post{max-width:85%}}
 @media(max-width:700px){.workspace{grid-template-columns:1fr}.masthead>.brand{width:auto}.room-list{min-height:61px}.room-nav[data-chat]{max-width:245px;min-width:170px;min-height:56px;padding:8px}.room-nav[data-chat] .room-nav-icon{width:28px;height:28px;border-radius:7px}.room-nav strong{font-size:11px}.room-nav small{max-width:155px;font-size:10px;margin-top:2px}.room-nav-meta time{font-size:9px}.room-nav-meta{gap:4px}.sidebar{max-height:224px}.directory-list>summary{padding-top:18px}.room-header{padding:12px 17px;min-height:66px}.room-header h1{font-size:17px}.room-header p{font-size:11px}.participants-button{font-size:11px;padding:5px}.chat-timeline{padding:13px 12px 16px}.message-feed{gap:8px}.message-feed .post{max-width:91%;padding:10px 12px 7px;min-width:140px}.post-body{font-size:14px}.post-author strong{font-size:11px}.post-author small{font-size:9px}.room-section .composer-card{padding:10px 12px 7px}.room-section .composer-card textarea{font-size:16px;padding:9px 12px}.composer-card #message-form{gap:8px}.composer-card #send-message{padding:10px 13px;font-size:12px}.composer-status{font-size:9px;margin-top:5px}.timeline-wrap .latest-button{right:12px;bottom:12px}.reply-preview span{max-width:100%}}
+.brand .brand-name,.brand .brand-description{display:block}
+.auth-intro .auth-identity .brand{line-height:1.2;letter-spacing:0}
+.auth-intro .brand .brand-name{font-size:30px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.auth-intro .brand .brand-description{font-size:14px;font-weight:500;letter-spacing:.2px;margin-top:7px;color:#dfc17d}
+.masthead>.brand{line-height:1.2;letter-spacing:0}
+.masthead .brand-name{font-size:20px;font-weight:700;letter-spacing:1.7px;text-transform:uppercase}
+.masthead .brand-description{font-size:12px;font-weight:400;letter-spacing:.1px;color:#d3e1e9;margin-top:3px}
+@media(max-width:700px){.masthead>.brand{max-width:155px;min-width:0;flex-shrink:1}.masthead .brand-name{font-size:17px;letter-spacing:1.2px}.masthead .brand-description{font-size:11px}.auth-intro .brand .brand-name{font-size:27px}.auth-intro .brand .brand-description{font-size:13px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}

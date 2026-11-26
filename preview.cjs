@@ -38,7 +38,7 @@ async function startPreview(options={}){
   post(room('Mali Hizmetler Müdürlüğü'),4,'Müdürlük içi bütçe değerlendirmesinin gündemini bu alanda toparlayalım.',23);
   const port=options.port??Number(process.env.PREVIEW_PORT||8096);
   await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(port,'127.0.0.1',resolve);});
-  if(!options.quiet){console.log(`ULAK önizleme: http://127.0.0.1:${app.server.address().port}/`);console.log('Önizleme yöneticisi: orkun | Parola: admin');console.log('Giriş bilgilerini elle yazın. Veriler kapanınca silinir.');}
+  if(!options.quiet){console.log(`Turkuaz Kurumsal İletişim önizleme: http://127.0.0.1:${app.server.address().port}/`);console.log('Önizleme yöneticisi: orkun | Parola: admin');console.log('Giriş bilgilerini elle yazın. Veriler kapanınca silinir.');}
   let stopping=false;const close=async()=>{if(stopping)return;stopping=true;await app.close();};
   if(require.main===module){process.on('SIGINT',close);process.on('SIGTERM',close);}
   return{app,server:app.server,close};

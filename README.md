@@ -1,6 +1,6 @@
-# ULAK — Müdürlükler için kurum iletişim alanı
+# Turkuaz Kurumsal İletişim — Müdürlükler için kurum iletişim alanı
 
-ULAK, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından oluşan** bir iletişim portalıdır. Kullanıcılar kullanıcı adı ve parolayla giriş yapar. Her personel kendi müdürlük odasına ve tüm kurum personelinin ortak **Genel Alan** odasına erişir.
+Turkuaz Kurumsal İletişim, kurumun yerel ağında kullanılan, **yalnızca grup paylaşımlarından oluşan** bir iletişim portalıdır. Kullanıcılar kullanıcı adı ve parolayla giriş yapar. Her personel kendi müdürlük odasına ve tüm kurum personelinin ortak **Genel Alan** odasına erişir.
 
 Kaynak depo: https://github.com/theorkun/ulak
 

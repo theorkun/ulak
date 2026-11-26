@@ -122,7 +122,7 @@ function createChat(options = {}) {
       const expected = options.publicOrigin || process.env.PUBLIC_ORIGIN || `${options.tls ? 'https' : 'http'}://${req.headers.host}`;
       if (req.headers.origin !== expected) fail(403, 'İstek kaynağı doğrulanamadı.');
     }
-    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'ULAK', preview: options.preview === true, recoveryChannels:recovery.channels, localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
+    if (route === '/api/status' && req.method === 'GET') return json(res, 200, { setupRequired: countUsers() === 0, name: 'Turkuaz Kurumsal İletişim', preview: options.preview === true, recoveryChannels:recovery.channels, localSetup: ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) });
     if (route === '/api/recovery/request' && req.method === 'POST') return json(res,200,await recovery.request(await body(req),req.socket.remoteAddress));
     if (route === '/api/recovery/confirm' && req.method === 'POST') return json(res,200,await recovery.confirm(await body(req),req.socket.remoteAddress));
     if (route === '/api/setup' && req.method === 'POST') {
@@ -344,7 +344,7 @@ if (require.main === module) {
   const app = createChat({ tls });
   const port = Number(process.env.PORT || 8095), host = process.env.HOST || '127.0.0.1';
   app.server.listen(port, host, () => {
-    console.log(`\nULAK hazır: ${tls ? 'https' : 'http'}://localhost:${port}\nDinleme adresi: ${host}`);
+    console.log(`\nTurkuaz Kurumsal İletişim hazır: ${tls ? 'https' : 'http'}://localhost:${port}\nDinleme adresi: ${host}`);
     if (app.setupRequired()) console.log(`\nİlk yönetici kurulum kodu (yalnızca bu bilgisayarda):\n${app.setupToken}\n\nİlk kurulum bağlantısı (bu bilgisayarda açın):\n${tls ? 'https' : 'http'}://localhost:${port}/#setup=${app.setupToken}\n`);
     if (host === '0.0.0.0') Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal).forEach(i => console.log(`Yerel ağ adresi: ${tls ? 'https' : 'http'}://${i.address}:${port}`));
   });

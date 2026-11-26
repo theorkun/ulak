@@ -1,4 +1,4 @@
-ULAK - MÜDÜRLÜK ODAKLI KURUM İLETİŞİM ALANI
+Turkuaz Kurumsal İletişim - MÜDÜRLÜK ODAKLI KURUM İLETİŞİM ALANI
 
 1. ZIP dosyasını bir klasöre çıkarın.
 2. Node.js 24 veya üzeri kurulu olmalı. Bu bilgisayarda mevcut çalışma ortamı otomatik bulunur.

@@ -17,9 +17,9 @@ function createSmtpMailer(env=process.env,createTransport){
     async send(message){
       if(message.channel!=='email'||!address(message.to)||!/^\d{6}$/.test(message.code))throw Error('Geçersiz parola yenileme iletisi.');
       const result=await transport.sendMail({
-        from:{name:'Sarıçam Belediyesi · ULAK',address:from},to:{address:message.to},
-        subject:'ULAK parola yenileme kodunuz',
-        text:`ULAK parola yenileme kodunuz: ${message.code}\n\nBu kod 10 dakika geçerlidir ve yalnızca bir kez kullanılabilir.\nKodu kimseyle paylaşmayın. Parola yenileme talebini siz oluşturmadıysanız bu iletiyi dikkate almayın; hesabınızın parolası değiştirilmemiştir.\n\nSarıçam Belediyesi · ULAK`,
+        from:{name:'Sarıçam Belediyesi · Turkuaz Kurumsal İletişim',address:from},to:{address:message.to},
+        subject:'Turkuaz Kurumsal İletişim parola yenileme kodunuz',
+        text:`Turkuaz Kurumsal İletişim parola yenileme kodunuz: ${message.code}\n\nBu kod 10 dakika geçerlidir ve yalnızca bir kez kullanılabilir.\nKodu kimseyle paylaşmayın. Parola yenileme talebini siz oluşturmadıysanız bu iletiyi dikkate almayın; hesabınızın parolası değiştirilmemiştir.\n\nSarıçam Belediyesi · Turkuaz Kurumsal İletişim`,
         disableFileAccess:true,disableUrlAccess:true
       });
       if(!result.accepted?.length||result.rejected?.length)throw Error('E-posta sunucusu iletiyi kabul etmedi.');
